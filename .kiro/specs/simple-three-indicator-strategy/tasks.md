@@ -1,0 +1,107 @@
+# Implementation Plan
+
+- [ ] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Seven Indicator Complexity and Low Signal Generation
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Test that the system uses 7 indicators with 4/7 consensus threshold and generates low signal rate
+  - Test implementation details from Fault Condition in design:
+    - Verify system uses 7 indicators (RSI, MACD, BB, EMA, Stochastic, VWAP, SuperTrend)
+    - Verify consensus threshold is 4/7
+    - Generate 100 random market scenarios and measure signal generation rate
+    - Assert that signal generation rate is low (< 30%) due to high threshold
+  - The test assertions should match the Expected Behavior Properties from design:
+    - After fix: system should use only 3 indicators (RSI, OTT, BB)
+    - After fix: consensus threshold should be 2/3
+    - After fix: signal generation rate should be higher (> 50%)
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found to understand root cause:
+    - How many scenarios failed to generate signals with 7 indicators?
+    - Which indicator conflicts prevented consensus?
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.6, 2.7_
+
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - API and Trading Infrastructure Preservation
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (API calls, balance management, order placement, WebSocket, AUTO_TRADE mode)
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements:
+    - Binance API calls (fetch_balance, price fetching) produce same results
+    - Order placement functions (place_order, auto_buy, auto_sell) behave identically
+    - Trade logging (log_trade) produces same output format
+    - WebSocket emission (socketio.emit) sends data to frontend
+    - AUTO_TRADE=False mode only shows signals without executing trades
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+- [ ] 3. Fix for seven indicator complexity - migrate to three indicator system
+
+  - [x] 3.1 Add OTT indicator implementation
+    - Create `safe_ott()` function in `main.py`
+    - Parameters: period=2, percent=1.4, MA Type=VAR
+    - Calculate variance-based moving average
+    - Return trend direction (1=uptrend, -1=downtrend, 0=neutral) and OTT value
+    - _Bug_Condition: system_state.indicator_count == 7 AND system_state.consensus_threshold == 4_
+    - _Expected_Behavior: system_state.indicator_count == 3 AND system_state.consensus_threshold == 2_
+    - _Preservation: All API operations, balance management, order placement, logging, WebSocket communication unchanged_
+    - _Requirements: 2.1, 2.2, 2.3_
+
+  - [ ] 3.2 Rewrite calc_consensus() function
+    - Remove old 7-indicator calculations (MACD, EMA Cross, Stochastic, VWAP, SuperTrend)
+    - Keep RSI and Bollinger Bands calculations
+    - Add OTT indicator calculation using safe_ott()
+    - Implement 2/3 majority logic:
+      - If 2 or more indicators signal BUY → return 'BUY'
+      - If 2 or more indicators signal SELL → return 'SELL'
+      - Otherwise → return '' (no signal)
+    - Update return values to include only 3 indicator values
+    - _Bug_Condition: isBugCondition(system_state) where system uses 7 indicators_
+    - _Expected_Behavior: expectedBehavior(result) - system uses 3 indicators with 2/3 consensus_
+    - _Preservation: Preservation Requirements from design - API, balance, orders, logs, WebSocket unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 2.6, 2.7, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+
+  - [ ] 3.3 Update WebSocket emission data
+    - Modify socketio.emit() calls to send only 3 indicator values (RSI, OTT, BB)
+    - Remove old indicator values from emitted data
+    - Ensure frontend receives correct data format
+    - _Preservation: WebSocket communication mechanism unchanged, only data content updated_
+    - _Requirements: 3.5_
+
+  - [ ] 3.4 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Three Indicator System with Higher Signal Rate
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied:
+      - System uses only 3 indicators (RSI, OTT, BB)
+      - Consensus threshold is 2/3
+      - Signal generation rate is higher (> 50%)
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.6, 2.7_
+
+  - [ ] 3.5 Verify preservation tests still pass
+    - **Property 2: Preservation** - API and Trading Infrastructure Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all preservation tests still pass after fix:
+      - Binance API calls work identically
+      - Balance management unchanged
+      - Order placement functions unchanged
+      - Trade logging unchanged
+      - WebSocket communication mechanism unchanged
+      - AUTO_TRADE mode control unchanged
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Run all tests (exploration + preservation)
+  - Verify signal generation rate improved with 3-indicator system
+  - Verify all API operations, balance management, orders, logs, WebSocket preserved
+  - Test AUTO_TRADE=True mode (automatic trading)
+  - Test AUTO_TRADE=False mode (signal display only)
+  - Ensure all tests pass, ask the user if questions arise

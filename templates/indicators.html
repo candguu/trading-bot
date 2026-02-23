@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="tr" style="background-color: #0b0e11;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingBot Pro — İndikatörler</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+:root {
+    --bg: #0b0e11;
+    --panel: #161a1e;
+    --panel2: #1e2329;
+    --border: #2b3139;
+    --gold: #f3ba2f;
+    --green: #0ecb81;
+    --red: #f6465d;
+    --text: #eaecef;
+    --muted: #848e9c;
+    --blue: #3861fb;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; overflow: hidden; }
+
+.nav { height: 56px; display: flex; align-items: center; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 32px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--gold), #c87700); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.logo-text { font-weight: 700; font-size: 16px; color: #fff; }
+.logo-text span { color: var(--gold); }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all .15s; border: 1px solid transparent; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,.06); border-color: var(--border); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.bal-badge { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 12px; }
+.bal-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+/* Account Dropdown */
+.account-dropdown{position:relative;}
+.account-btn{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .2s;color:var(--text);font-family:var(--font);font-size:13px;font-weight:500;}
+.account-btn:hover{background:rgba(255,255,255,.04);border-color:var(--gold);}
+.account-icon{font-size:16px;}
+.account-text{font-weight:600;}
+.dropdown-arrow{font-size:10px;transition:transform .2s;}
+.account-btn.active .dropdown-arrow{transform:rotate(180deg);}
+.account-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px;opacity:0;visibility:hidden;transform:translateY(-10px);transition:all .2s;z-index:1000;}
+.account-menu.active{opacity:1;visibility:visible;transform:translateY(0);}
+.account-menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--text);text-decoration:none;font-size:14px;font-weight:500;transition:all .15s;border-bottom:1px solid rgba(255,255,255,.03);}
+.account-menu-item:last-child{border-bottom:none;}
+.account-menu-item:hover{background:rgba(255,255,255,.04);color:#fff;}
+.account-menu-item.logout{color:var(--red);}
+.account-menu-item.logout:hover{background:rgba(246,70,93,.1);}
+.menu-icon{font-size:18px;width:24px;text-align:center;}
+.account-menu-divider{height:1px;background:var(--border);margin:4px 0;}
+
+.main { display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 56px); overflow: hidden; }
+.chart-col { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.info-col { display: flex; flex-direction: column; background: var(--panel); overflow-y: auto; }
+
+/* Chart Toolbar */
+.chart-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.chart-title { font-size: 16px; font-weight: 700; color: #fff; }
+.chart-subtitle { font-size: 11px; color: var(--muted); margin-left: 8px; }
+.tf-btn { padding: 4px 10px; border-radius: 4px; border: none; background: none; color: var(--muted); font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.tf-btn:hover, .tf-btn.active { color: #fff; background: rgba(255,255,255,.07); }
+
+/* Chart */
+.chart-wrap { flex: 1; position: relative; }
+
+/* Info Cards */
+.info-section { padding: 20px; border-bottom: 1px solid var(--border); }
+.info-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.info-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+
+.indicator-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+.indicator-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.indicator-name { font-size: 13px; font-weight: 600; color: #fff; }
+.indicator-value { font-size: 16px; font-weight: 700; font-family: var(--mono); color: var(--gold); }
+.indicator-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+.signal-box { background: var(--panel2); border: 2px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+.signal-box.buy { border-color: var(--green); background: rgba(14,203,129,.05); }
+.signal-box.sell { border-color: var(--red); background: rgba(246,70,93,.05); }
+.signal-icon { font-size: 32px; margin-bottom: 8px; }
+.signal-text { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.signal-desc { font-size: 11px; color: var(--muted); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.stat-value { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--gold); }
+
+.auto-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.auto-badge.on { background: rgba(14,203,129,.15); color: var(--green); border: 1px solid rgba(14,203,129,.3); }
+.auto-badge.off { background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
+
+/* Auto Toggle Switch */
+.auto-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--border); position: relative; cursor: pointer; transition: background .3s; border: none; outline: none; }
+.auto-toggle.on { background: var(--green); }
+.toggle-circle { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left .3s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.auto-toggle.on .toggle-circle { left: 23px; }
+
+/* Signal History */
+.signal-history-item { display: flex; align-items: center; gap: 10px; background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; transition: all .2s; }
+.signal-history-item:hover { background: rgba(255,255,255,.02); }
+.signal-history-item.buy { border-left: 3px solid var(--green); }
+.signal-history-item.sell { border-left: 3px solid var(--red); }
+.signal-history-icon { font-size: 18px; flex-shrink: 0; }
+.signal-history-content { flex: 1; min-width: 0; }
+.signal-history-type { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.signal-history-type.buy { color: var(--green); }
+.signal-history-type.sell { color: var(--red); }
+.signal-history-time { font-size: 10px; color: var(--muted); }
+.signal-history-price { font-size: 13px; font-weight: 700; font-family: var(--mono); color: var(--gold); text-align: right; flex-shrink: 0; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <a class="logo" href="/">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Trading<span>Bot</span></div>
+    </a>
+    <div class="nav-tabs">
+        <a class="nav-tab" href="/">🏠 Piyasa</a>
+        <a class="nav-tab" href="/spot">📊 Spot</a>
+        <a class="nav-tab active" href="/indicators">📈 İndikatör</a>
+    </div>
+    <div class="nav-right">
+        <div class="bal-badge">
+            <div class="dot"></div>
+            <span style="color:var(--muted);font-size:11px;">Toplam Bakiye</span>
+            <span style="font-weight:700;font-family:var(--mono);" id="nav-total-balance">—</span>
+            <span style="color:var(--muted);font-size:11px;margin-left:4px;">USDT</span>
+        </div>
+        
+        <div class="account-dropdown">
+            <button class="account-btn" id="account-btn" onclick="toggleAccountMenu()">
+                <span class="account-icon">👤</span>
+                <span class="account-text">Hesabım</span>
+                <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="account-menu" id="account-menu">
+                <a href="/portfolio" class="account-menu-item">
+                    <span class="menu-icon">💼</span>
+                    <span>Portföy</span>
+                </a>
+                <a href="/settings" class="account-menu-item">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Ayarlar</span>
+                </a>
+                <div class="account-menu-divider"></div>
+                <a href="/logout" class="account-menu-item logout">
+                    <span class="menu-icon">🚪</span>
+                    <span>Çıkış Yap</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="main">
+    <!-- Chart Column -->
+    <div class="chart-col">
+        <div class="chart-toolbar">
+            <span class="chart-title">BTC/USDT</span>
+            <span class="chart-subtitle">SMA 5 & SMA 9 Crossover</span>
+            <div style="width: 1px; height: 20px; background: var(--border); margin: 0 8px;"></div>
+            <button class="tf-btn" onclick="setTf('5')">5d</button>
+            <button class="tf-btn active" onclick="setTf('15')">15d</button>
+            <button class="tf-btn" onclick="setTf('60')">1s</button>
+            <button class="tf-btn" onclick="setTf('240')">4s</button>
+            <button class="tf-btn" onclick="setTf('D')">1G</button>
+        </div>
+        
+        <div class="chart-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%;">
+                <div id="tradingview_chart" style="height:100%;width:100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Column -->
+    <div class="info-col">
+        <div class="info-section">
+            <div class="info-title">📊 Aktif Strateji</div>
+            <div class="indicator-card">
+                <div class="indicator-header">
+                    <span class="indicator-name">SMA 5/9 Crossover</span>
+                    <button class="auto-toggle" id="auto-toggle" onclick="toggleAutoBot()">
+                        <span class="toggle-circle"></span>
+                    </button>
+                </div>
+                <div class="indicator-detail">
+                    Golden Cross (SMA5 yukarı keser SMA9) → AL<br>
+                    Death Cross (SMA5 aşağı keser SMA9) → SAT
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-title">🎯 Güncel Sinyal</div>
+            <div class="signal-box" id="signal-box">
+                <div class="signal-icon" id="signal-icon">⏳</div>
+                <div class="signal-text" id="signal-text">Kesişim Bekleniyor</div>
+                <div class="signal-desc" id="signal-desc">SMA değerleri izleniyor...</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-title">📜 Son Sinyaller</div>
+            <div id="signal-history" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="text-align: center; padding: 20px; color: var(--muted); font-size: 11px;">
+                    Henüz sinyal yok
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-title">📈 İndikatör Değerleri</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">SMA 5</div>
+                    <div class="stat-value" id="sma5-val" style="color: var(--green);">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">SMA 9</div>
+                    <div class="stat-value" id="sma9-val" style="color: var(--blue);">—</div>
+                </div>
+            </div>
+            
+            <div class="indicator-card" style="margin-top: 12px;">
+                <div class="indicator-header">
+                    <span class="indicator-name">Fiyat</span>
+                    <span class="indicator-value" id="price-val">—</span>
+                </div>
+                <div class="indicator-detail">
+                    24s Değişim: <span id="change24" style="color: var(--muted);">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-title">💡 Strateji Bilgisi</div>
+            <div class="info-desc">
+                <strong>Golden Cross:</strong> SMA 5 aşağıdan yukarı keser SMA 9 → Bakiyenin %95'i ile BTC alımı<br><br>
+                <strong>Death Cross:</strong> SMA 5 yukarıdan aşağı keser SMA 9 → Tüm BTC satımı<br><br>
+                <strong>Zaman Dilimi:</strong> 15 dakika<br>
+                <strong>Kontrol:</strong> Her 3 saniye
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let socket = null;
+let tvWidget = null;
+let currentInterval = '15';
+let chart = null;
+let signalShapes = []; // Eklenen işaretleri takip et
+let signalHistory = []; // Son 10 sinyal
+let autoTradeEnabled = true;
+
+// TradingView Chart
+async function initChart() {
+    try {
+        // Renk ayarlarını veritabanından yükle
+        let sma5Color = '#0ecb81';
+        let sma9Color = '#3861fb';
+        let lineWidth = 2;
+        
+        try {
+            const response = await fetch('/api/settings/chart_colors', {
+                credentials: 'same-origin'
+            });
+            const settings = await response.json();
+            if (settings.sma5_color) sma5Color = settings.sma5_color;
+            if (settings.sma9_color) sma9Color = settings.sma9_color;
+            if (settings.line_width) lineWidth = settings.line_width;
+            console.log('📊 Grafik ayarları yüklendi:', { sma5Color, sma9Color, lineWidth });
+        } catch(e) {
+            console.warn('Grafik ayarları yüklenemedi, varsayılan renkler kullanılıyor:', e);
+        }
+        
+        tvWidget = new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": currentInterval,
+            "timezone": "Europe/Istanbul",
+            "theme": "dark",
+            "style": "1",
+            "locale": "tr",
+            "toolbar_bg": "#0b0e11",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "save_image": false,
+            "container_id": "tradingview_chart",
+            "client_id": "tradingbot_pro",
+            "user_id": "public_user",
+            "backgroundColor": "#0b0e11",
+            "gridColor": "#1e2530",
+            "studies": [
+                {
+                    "id": "MASimple@tv-basicstudies",
+                    "inputs": {
+                        "length": 5
+                    },
+                    "styles": {
+                        "plot_0": {
+                            "color": sma5Color,
+                            "linewidth": lineWidth
+                        }
+                    }
+                },
+                {
+                    "id": "MASimple@tv-basicstudies",
+                    "inputs": {
+                        "length": 9
+                    },
+                    "styles": {
+                        "plot_0": {
+                            "color": sma9Color,
+                            "linewidth": lineWidth
+                        }
+                    }
+                }
+            ],
+            "disabled_features": [
+                // localStorage devre dışı bırakıldı - ayarlar kalıcı olsun
+            ],
+            "enabled_features": [
+                "study_templates",
+                "items_favoriting"
+            ],
+            "overrides": {
+                "mainSeriesProperties.candleStyle.upColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.downColor": "#f6465d",
+                "mainSeriesProperties.candleStyle.borderUpColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.borderDownColor": "#f6465d",
+                "mainSeriesProperties.candleStyle.wickUpColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.wickDownColor": "#f6465d",
+                "paneProperties.background": "#0b0e11",
+                "paneProperties.backgroundType": "solid"
+            },
+            "loading_screen": {
+                "backgroundColor": "#0b0e11",
+                "foregroundColor": "#f3ba2f"
+            }
+        });
+        
+        // Chart hazır olduğunda
+        tvWidget.onChartReady(() => {
+            chart = tvWidget.activeChart();
+            console.log('✅ TradingView chart hazır - Sinyal işaretleri eklenebilir');
+        });
+    } catch(e) {
+        console.error('TradingView yüklenemedi:', e);
+    }
+}
+
+function setTf(interval) {
+    currentInterval = interval;
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    if (tvWidget && tvWidget.chart) {
+        tvWidget.chart().setResolution(interval);
+    }
+}
+
+// Grafik üzerine AL/SAT işareti ekle
+function addSignalToChart(signalData) {
+    if (!chart) {
+        console.warn('Chart henüz hazır değil');
+        return;
+    }
+    
+    try {
+        const timestamp = signalData.time || Math.floor(Date.now() / 1000);
+        const price = signalData.price;
+        const type = signalData.type; // 'buy' veya 'sell'
+        
+        // Shape özellikleri
+        const shapeOptions = {
+            time: timestamp,
+            price: price,
+            shape: type === 'buy' ? 'arrow_up' : 'arrow_down',
+            text: type === 'buy' ? 'AL' : 'SAT',
+            overrides: {
+                color: type === 'buy' ? '#0ecb81' : '#f6465d',
+                backgroundColor: type === 'buy' ? '#0ecb81' : '#f6465d',
+                borderColor: type === 'buy' ? '#0ecb81' : '#f6465d',
+                textColor: '#ffffff',
+                fontsize: 12,
+                bold: true
+            }
+        };
+        
+        // Shape ekle
+        const shapeId = chart.createShape(
+            { time: timestamp, price: price },
+            {
+                shape: type === 'buy' ? 'arrow_up' : 'arrow_down',
+                overrides: {
+                    color: type === 'buy' ? '#0ecb81' : '#f6465d',
+                    backgroundColor: type === 'buy' ? '#0ecb81' : '#f6465d',
+                    borderColor: type === 'buy' ? '#0ecb81' : '#f6465d',
+                    size: 'large'
+                }
+            }
+        );
+        
+        // Text ekle
+        const textId = chart.createShape(
+            { time: timestamp, price: price },
+            {
+                shape: 'text',
+                text: type === 'buy' ? '🟢 AL' : '🔴 SAT',
+                overrides: {
+                    color: type === 'buy' ? '#0ecb81' : '#f6465d',
+                    fontsize: 12,
+                    bold: true,
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    borderColor: type === 'buy' ? '#0ecb81' : '#f6465d'
+                }
+            }
+        );
+        
+        signalShapes.push({ shapeId, textId, timestamp });
+        
+        console.log(`✅ ${type.toUpperCase()} işareti eklendi: $${price.toFixed(2)} @ ${new Date(timestamp * 1000).toLocaleTimeString()}`);
+        
+        // Maksimum 50 işaret tut
+        if (signalShapes.length > 50) {
+            const oldest = signalShapes.shift();
+            try {
+                chart.removeEntity(oldest.shapeId);
+                chart.removeEntity(oldest.textId);
+            } catch(e) {}
+        }
+    } catch(e) {
+        console.error('İşaret eklenirken hata:', e);
+    }
+}
+
+// Socket Connection
+function connectSocket() {
+    socket = io({ 
+        transports: ['polling', 'websocket'],
+        reconnection: true
+    });
+    
+    socket.on('connect', () => {
+        console.log('✅ Socket bağlandı');
+    });
+
+    socket.on('pro_data_stream', data => {
+        console.log('📡 pro_data_stream alındı:', data);
+        
+        // Fiyat
+        const priceEl = document.getElementById('price-val');
+        if (priceEl) priceEl.textContent = '$' + data.price.toLocaleString('en-US', {minimumFractionDigits:2});
+        
+        // 24s değişim
+        const change24El = document.getElementById('change24');
+        if (change24El) {
+            const sign = data.change24 >= 0 ? '+' : '';
+            change24El.textContent = sign + data.change24.toFixed(2) + '%';
+            change24El.style.color = data.change24 >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+        
+        // SMA değerleri
+        const sma5El = document.getElementById('sma5-val');
+        const sma9El = document.getElementById('sma9-val');
+        if (sma5El && data.sma5) sma5El.textContent = '$' + data.sma5.toLocaleString('en-US', {minimumFractionDigits:0});
+        if (sma9El && data.sma9) sma9El.textContent = '$' + data.sma9.toLocaleString('en-US', {minimumFractionDigits:0});
+        
+        // Sinyal
+        updateSignal(data.signal, data.sma5, data.sma9);
+        
+        // Auto toggle durumu
+        if (data.auto_trade !== undefined) {
+            autoTradeEnabled = data.auto_trade;
+            updateAutoToggle();
+        }
+    });
+    
+    // Sinyal olayını dinle - Grafik üzerine işaret ekle ve geçmişe ekle
+    socket.on('signal_event', signalData => {
+        console.log('🎯 Sinyal alındı:', signalData);
+        addSignalToChart(signalData);
+        addSignalToHistory(signalData);
+        
+        // Bildirim göster
+        const signalType = signalData.type === 'buy' ? 'GOLDEN CROSS - AL' : 'DEATH CROSS - SAT';
+        const emoji = signalData.type === 'buy' ? '🟢' : '🔴';
+        console.log(`${emoji} ${signalType} @ $${signalData.price.toFixed(2)}`);
+    });
+}
+
+function updateSignal(signal, sma5, sma9) {
+    const signalBox = document.getElementById('signal-box');
+    const signalIcon = document.getElementById('signal-icon');
+    const signalText = document.getElementById('signal-text');
+    const signalDesc = document.getElementById('signal-desc');
+    
+    if (!signalBox) return;
+    
+    // SMA değerlerini formatla
+    const sma5Str = (sma5 && sma5 > 0) ? Math.round(sma5).toLocaleString('en-US') : '—';
+    const sma9Str = (sma9 && sma9 > 0) ? Math.round(sma9).toLocaleString('en-US') : '—';
+    
+    console.log('📊 updateSignal çağrıldı:', { signal, sma5, sma9, sma5Str, sma9Str });
+    
+    if (signal === 'BUY') {
+        signalBox.className = 'signal-box buy';
+        signalIcon.textContent = '🟢';
+        signalText.textContent = 'GOLDEN CROSS - AL';
+        signalDesc.textContent = 'SMA5 (' + sma5Str + ') yukarı kesti SMA9 (' + sma9Str + ')';
+    } else if (signal === 'SELL') {
+        signalBox.className = 'signal-box sell';
+        signalIcon.textContent = '🔴';
+        signalText.textContent = 'DEATH CROSS - SAT';
+        signalDesc.textContent = 'SMA5 (' + sma5Str + ') aşağı kesti SMA9 (' + sma9Str + ')';
+    } else {
+        // Sinyal yok - mevcut durumu göster
+        signalBox.className = 'signal-box';
+        signalIcon.textContent = '⏳';
+        signalText.textContent = 'Kesişim Bekleniyor';
+        
+        // SMA değerlerini göster
+        if (sma5 && sma9) {
+            if (sma5 > sma9) {
+                signalDesc.textContent = 'SMA5 (' + sma5Str + ') > SMA9 (' + sma9Str + ') - Yükseliş trendinde';
+            } else if (sma5 < sma9) {
+                signalDesc.textContent = 'SMA5 (' + sma5Str + ') < SMA9 (' + sma9Str + ') - Düşüş trendinde';
+            } else {
+                signalDesc.textContent = 'SMA değerleri izleniyor...';
+            }
+        } else {
+            signalDesc.textContent = 'SMA değerleri izleniyor...';
+        }
+    }
+}
+
+// Auto toggle
+function toggleAutoBot() {
+    if (!socket) return;
+    autoTradeEnabled = !autoTradeEnabled;
+    socket.emit('toggle_auto', { enabled: autoTradeEnabled });
+    updateAutoToggle();
+}
+
+function updateAutoToggle() {
+    const toggle = document.getElementById('auto-toggle');
+    if (toggle) {
+        toggle.className = 'auto-toggle ' + (autoTradeEnabled ? 'on' : 'off');
+    }
+}
+
+// Sinyal geçmişine ekle
+function addSignalToHistory(signalData) {
+    const signal = {
+        type: signalData.type,
+        price: signalData.price,
+        time: new Date(signalData.time * 1000)
+    };
+    
+    // Başa ekle
+    signalHistory.unshift(signal);
+    
+    // Maksimum 10 sinyal tut
+    if (signalHistory.length > 10) {
+        signalHistory.pop();
+    }
+    
+    renderSignalHistory();
+}
+
+function renderSignalHistory() {
+    const container = document.getElementById('signal-history');
+    if (!container) return;
+    
+    if (signalHistory.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted); font-size: 11px;">Henüz sinyal yok</div>';
+        return;
+    }
+    
+    container.innerHTML = signalHistory.map(signal => {
+        const typeText = signal.type === 'buy' ? 'GOLDEN CROSS' : 'DEATH CROSS';
+        const icon = signal.type === 'buy' ? '🟢' : '🔴';
+        const timeStr = signal.time.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        return `
+            <div class="signal-history-item ${signal.type}">
+                <div class="signal-history-icon">${icon}</div>
+                <div class="signal-history-content">
+                    <div class="signal-history-type ${signal.type}">${typeText}</div>
+                    <div class="signal-history-time">${timeStr}</div>
+                </div>
+                <div class="signal-history-price">$${signal.price.toLocaleString('en-US', {minimumFractionDigits:2})}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        initChart();
+    }, 500);
+    connectSocket();
+    loadTotalBalance();
+    loadSignalHistory(); // Sinyal geçmişini yükle
+});
+
+// Sinyal geçmişini API'den yükle
+async function loadSignalHistory() {
+    try {
+        const response = await fetch('/api/signals/history');
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+            signalHistory = data.map(signal => ({
+                type: signal.type,
+                price: signal.price,
+                time: new Date(signal.time * 1000)
+            }));
+            renderSignalHistory();
+            console.log(`✅ ${signalHistory.length} sinyal geçmişi yüklendi`);
+        }
+    } catch(e) {
+        console.error('Sinyal geçmişi yüklenemedi:', e);
+    }
+}
+
+// Account menu toggle
+function toggleAccountMenu() {
+    const menu = document.getElementById('account-menu');
+    const btn = document.getElementById('account-btn');
+    menu?.classList.toggle('active');
+    btn?.classList.toggle('active');
+}
+
+document.addEventListener('click', function(event) {
+    const accountDropdown = document.querySelector('.account-dropdown');
+    if (accountDropdown && !accountDropdown.contains(event.target)) {
+        document.getElementById('account-menu')?.classList.remove('active');
+        document.getElementById('account-btn')?.classList.remove('active');
+    }
+});
+
+// Load total balance
+async function loadTotalBalance() {
+    try {
+        const r = await fetch('/api/balance');
+        const d = await r.json();
+        if (!d.error) {
+            const priceRes = await fetch('https://testnet.binance.vision/api/v3/ticker/price?symbol=BTCUSDT');
+            const priceData = await priceRes.json();
+            const btcPrice = parseFloat(priceData.price) || 0;
+            const totalBalance = parseFloat(d.USDT || 0) + (parseFloat(d.BTC || 0) * btcPrice);
+            const balanceEl = document.getElementById('nav-total-balance');
+            if (balanceEl) {
+                balanceEl.textContent = totalBalance.toLocaleString('tr-TR', {maximumFractionDigits:2});
+            }
+        }
+    } catch(e) {
+        console.error('Bakiye yüklenemedi:', e);
+    }
+}
+
+// Bakiyeyi periyodik güncelle
+setInterval(loadTotalBalance, 30000);
+</script>
+
+</body>
+</html>

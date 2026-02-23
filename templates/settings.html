@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="tr" style="background-color: #0b0e11;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>TradingBot Pro — Ayarlar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0b0e11;
+    --panel: #161a1e;
+    --panel2: #1e2329;
+    --border: #2b3139;
+    --gold: #f3ba2f;
+    --green: #0ecb81;
+    --red: #f6465d;
+    --text: #eaecef;
+    --muted: #848e9c;
+    --blue: #3861fb;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; -webkit-font-smoothing: antialiased; }
+
+/* NAV */
+.nav { height: 56px; display: flex; align-items: center; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; gap: 0; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 32px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--gold), #c87700); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 0 14px rgba(243,186,47,.3); }
+.logo-text { font-weight: 700; font-size: 16px; color: #fff; letter-spacing: -.4px; }
+.logo-text span { color: var(--gold); }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all .15s; border: 1px solid transparent; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,.06); border-color: var(--border); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+/* PAGE */
+.page { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
+.page-header { margin-bottom: 32px; }
+.page-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.page-subtitle { color: var(--muted); font-size: 14px; }
+
+.settings-grid { display: grid; gap: 24px; }
+.settings-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+.settings-card-title { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+.settings-item:last-child { border-bottom: none; }
+.settings-label { font-size: 14px; font-weight: 500; color: var(--text); }
+.settings-value { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.btn { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; }
+.btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(246,70,93,.1); }
+</style>
+</head>
+<body style="background-color: #0b0e11; color: #eaecef;">
+
+<nav class="nav">
+    <a class="logo" href="/">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Trading<span>Bot</span></div>
+    </a>
+    <div class="nav-tabs">
+        <a class="nav-tab" href="/">🏠 Piyasa</a>
+        <a class="nav-tab" href="/spot">📊 Spot</a>
+        <a class="nav-tab" href="/indicators">📈 İndikatör</a>
+    </div>
+</nav>
+
+<div class="page">
+    <div class="page-header">
+        <h1 class="page-title">⚙️ Ayarlar</h1>
+        <p class="page-subtitle">Hesap ve sistem ayarlarınızı yönetin</p>
+    </div>
+
+    <div class="settings-grid">
+        <div class="settings-card">
+            <h2 class="settings-card-title">👤 Hesap Bilgileri</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Kullanıcı Adı</div>
+                </div>
+                <div class="settings-value">admin</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Hesap Tipi</div>
+                </div>
+                <div class="settings-value">Testnet</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Şifre</div>
+                </div>
+                <button class="btn">Değiştir</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h2 class="settings-card-title">🔑 API Ayarları</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Binance API</div>
+                </div>
+                <div class="settings-value">Bağlı ✓</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">API Anahtarı</div>
+                </div>
+                <button class="btn">Yönet</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h2 class="settings-card-title">🔔 Bildirimler</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">İşlem Bildirimleri</div>
+                </div>
+                <button class="btn">Aktif</button>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Fiyat Alarmları</div>
+                </div>
+                <button class="btn">Aktif</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h2 class="settings-card-title">🎨 Grafik Ayarları</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">SMA 5 Rengi</div>
+                </div>
+                <input type="color" id="sma5-color" value="#0ecb81" onchange="saveChartColor('sma5', this.value)" style="width: 60px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel2); cursor: pointer;">
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">SMA 9 Rengi</div>
+                </div>
+                <input type="color" id="sma9-color" value="#3861fb" onchange="saveChartColor('sma9', this.value)" style="width: 60px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel2); cursor: pointer;">
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Çizgi Kalınlığı</div>
+                </div>
+                <select id="line-width" onchange="saveChartLineWidth(this.value)" style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel2); color: var(--text); font-family: var(--font); font-size: 13px; cursor: pointer;">
+                    <option value="1">İnce (1px)</option>
+                    <option value="2" selected>Normal (2px)</option>
+                    <option value="3">Kalın (3px)</option>
+                    <option value="4">Çok Kalın (4px)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h2 class="settings-card-title">💾 Veritabanı Yönetimi</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Toplam İşlem</div>
+                </div>
+                <div class="settings-value" id="db-trades">—</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Toplam Sinyal</div>
+                </div>
+                <div class="settings-value" id="db-signals">—</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Açık Emirler</div>
+                </div>
+                <div class="settings-value" id="db-orders">—</div>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">İşlem Geçmişini Temizle</div>
+                </div>
+                <button class="btn btn-danger" onclick="clearDatabase('trades')">Temizle</button>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Sinyal Geçmişini Temizle</div>
+                </div>
+                <button class="btn btn-danger" onclick="clearDatabase('signals')">Temizle</button>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Başlangıç Bakiyesini Sıfırla</div>
+                </div>
+                <button class="btn" onclick="resetStartingValue()">Sıfırla</button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h2 class="settings-card-title">⚠️ Tehlikeli Bölge</h2>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Tüm Veritabanını Temizle</div>
+                </div>
+                <button class="btn btn-danger" onclick="clearDatabase('all')">Tümünü Sil</button>
+            </div>
+            <div class="settings-item">
+                <div>
+                    <div class="settings-label">Çıkış Yap</div>
+                </div>
+                <a href="/logout" class="btn btn-danger">Çıkış</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Veritabanı istatistiklerini yükle
+async function loadDatabaseStats() {
+    try {
+        const response = await fetch('/api/database/stats');
+        const data = await response.json();
+        
+        document.getElementById('db-trades').textContent = data.total_trades || 0;
+        document.getElementById('db-signals').textContent = data.total_signals || 0;
+        document.getElementById('db-orders').textContent = data.open_orders || 0;
+    } catch(e) {
+        console.error('Veritabanı istatistikleri yüklenemedi:', e);
+    }
+}
+
+// Grafik rengini kaydet
+async function saveChartColor(indicator, color) {
+    try {
+        const response = await fetch('/api/settings/chart_colors', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ indicator, color })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`✅ ${indicator.toUpperCase()} rengi kaydedildi: ${color}\n\nİndikatör sayfasını yenileyin.`);
+        } else {
+            alert('❌ Hata: ' + data.error);
+        }
+    } catch(e) {
+        alert('❌ İşlem başarısız: ' + e.message);
+    }
+}
+
+// Çizgi kalınlığını kaydet
+async function saveChartLineWidth(width) {
+    try {
+        const response = await fetch('/api/settings/chart_linewidth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ width: parseInt(width) })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`✅ Çizgi kalınlığı kaydedildi: ${width}px\n\nİndikatör sayfasını yenileyin.`);
+        } else {
+            alert('❌ Hata: ' + data.error);
+        }
+    } catch(e) {
+        alert('❌ İşlem başarısız: ' + e.message);
+    }
+}
+
+// Grafik ayarlarını yükle
+async function loadChartSettings() {
+    try {
+        const response = await fetch('/api/settings/chart_colors', {
+            credentials: 'same-origin'
+        });
+        const data = await response.json();
+        
+        if (data.sma5_color) {
+            document.getElementById('sma5-color').value = data.sma5_color;
+        }
+        if (data.sma9_color) {
+            document.getElementById('sma9-color').value = data.sma9_color;
+        }
+        if (data.line_width) {
+            document.getElementById('line-width').value = data.line_width;
+        }
+    } catch(e) {
+        console.error('Grafik ayarları yüklenemedi:', e);
+    }
+}
+
+// Veritabanı tablosunu temizle
+async function clearDatabase(table) {
+    const messages = {
+        'trades': 'Tüm işlem geçmişi silinecek. Emin misiniz?',
+        'signals': 'Tüm sinyal geçmişi silinecek. Emin misiniz?',
+        'orders': 'Tüm açık emirler silinecek. Emin misiniz?',
+        'all': 'TÜM VERİTABANI silinecek! Bu işlem geri alınamaz. Emin misiniz?'
+    };
+    
+    if (!confirm(messages[table])) return;
+    
+    try {
+        const response = await fetch(`/api/database/clear/${table}`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            loadDatabaseStats();
+        } else {
+            alert('❌ Hata: ' + data.error);
+        }
+    } catch(e) {
+        alert('❌ İşlem başarısız: ' + e.message);
+    }
+}
+
+// Başlangıç bakiyesini sıfırla
+async function resetStartingValue() {
+    if (!confirm('Başlangıç bakiyesi şimdiki bakiyenize eşitlenecek. Kar/zarar hesabı sıfırlanacak. Emin misiniz?')) return;
+    
+    try {
+        const response = await fetch('/api/database/reset_starting_value', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`✅ Başlangıç bakiyesi güncellendi: $${data.starting_value.toFixed(2)}`);
+        } else {
+            alert('❌ Hata: ' + data.error);
+        }
+    } catch(e) {
+        alert('❌ İşlem başarısız: ' + e.message);
+    }
+}
+
+// Sayfa yüklendiğinde istatistikleri getir
+window.addEventListener('DOMContentLoaded', () => {
+    loadDatabaseStats();
+    loadChartSettings();
+    // Her 30 saniyede bir güncelle
+    setInterval(loadDatabaseStats, 30000);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="tr" style="background-color: #0b0e11;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>TradingBot Pro — Portföy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<style>
+:root {
+    --bg: #0b0e11;
+    --panel: #161a1e;
+    --panel2: #1e2329;
+    --border: #2b3139;
+    --gold: #f3ba2f;
+    --green: #0ecb81;
+    --red: #f6465d;
+    --text: #eaecef;
+    --muted: #848e9c;
+    --blue: #3861fb;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; -webkit-font-smoothing: antialiased; }
+
+/* NAV */
+.nav { height: 56px; display: flex; align-items: center; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; gap: 0; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 32px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--gold), #c87700); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 0 14px rgba(243,186,47,.3); }
+.logo-text { font-weight: 700; font-size: 16px; color: #fff; letter-spacing: -.4px; }
+.logo-text span { color: var(--gold); }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all .15s; border: 1px solid transparent; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,.06); border-color: var(--border); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.bal-badge { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 12px; }
+.bal-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+/* Account Dropdown */
+.account-dropdown{position:relative;}
+.account-btn{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .2s;color:var(--text);font-family:var(--font);font-size:13px;font-weight:500;}
+.account-btn:hover{background:var(--bg-hover);border-color:var(--gold);}
+.account-icon{font-size:16px;}
+.account-text{font-weight:600;}
+.dropdown-arrow{font-size:10px;transition:transform .2s;}
+.account-btn.active .dropdown-arrow{transform:rotate(180deg);}
+.account-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px;opacity:0;visibility:hidden;transform:translateY(-10px);transition:all .2s;z-index:1000;}
+.account-menu.active{opacity:1;visibility:visible;transform:translateY(0);}
+.account-menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--text);text-decoration:none;font-size:14px;font-weight:500;transition:all .15s;border-bottom:1px solid rgba(255,255,255,.03);}
+.account-menu-item:last-child{border-bottom:none;}
+.account-menu-item:hover{background:rgba(255,255,255,.04);color:#fff;}
+.account-menu-item.active{background:rgba(243,186,47,.08);color:var(--gold);}
+.account-menu-item.logout{color:var(--red);}
+.account-menu-item.logout:hover{background:rgba(246,70,93,.1);}
+.menu-icon{font-size:18px;width:24px;text-align:center;}
+.account-menu-divider{height:1px;background:var(--border);margin:4px 0;}
+
+/* PAGE */
+.page { max-width: 1280px; margin: 0 auto; padding: 32px 24px 60px; }
+
+/* HERO ROW */
+.hero-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+.hero-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; position: relative; overflow: hidden; transition: border-color .2s; }
+.hero-card:hover { border-color: rgba(243,186,47,.3); }
+.hero-card::before { content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px; border-radius:50%; opacity:.04; }
+.hero-card.total::before  { background: var(--gold); }
+.hero-card.usdt::before   { background: var(--green); }
+.hero-card.btc::before    { background: var(--gold); }
+.hero-card.pnl::before    { background: var(--blue); }
+.hc-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 10px; }
+.hc-val   { font-family: var(--mono); font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -.5px; }
+.hc-sub   { font-size: 11px; color: var(--muted); margin-top: 6px; font-family: var(--mono); }
+.hc-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: var(--mono); margin-top: 6px; }
+.hc-badge.pos { background: rgba(14,203,129,.12); color: var(--green); }
+.hc-badge.neg { background: rgba(246,70,93,.12);  color: var(--red); }
+.hc-badge.neu { background: rgba(255,255,255,.06); color: var(--muted); }
+
+/* DONUT CHART */
+.donut-section { display: grid; grid-template-columns: 320px 1fr; gap: 16px; margin-bottom: 28px; }
+.donut-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; }
+.section-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 18px; }
+.donut-wrap { display: flex; align-items: center; gap: 24px; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.legend-item { display: flex; align-items: center; gap: 10px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-name { font-size: 12px; color: var(--text); flex: 1; }
+.legend-pct  { font-family: var(--mono); font-size: 12px; font-weight: 600; color: #fff; }
+.legend-val  { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* PERFORMANCE CHART */
+.perf-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+.perf-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.tf-pills { display: flex; gap: 4px; }
+.tf-pill { padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: none; color: var(--muted); font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.tf-pill:hover, .tf-pill.active { border-color: var(--gold); color: var(--gold); background: rgba(243,186,47,.06); }
+#perf-canvas { width: 100%; height: 160px; display: block; }
+
+/* HOLDINGS TABLE */
+.holdings-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 28px; overflow: hidden; }
+.card-head { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-head-title { font-size: 13px; font-weight: 700; color: #fff; }
+table.holdings { width: 100%; border-collapse: collapse; }
+table.holdings thead th { padding: 10px 22px; text-align: left; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.holdings tbody tr { border-bottom: 1px solid rgba(255,255,255,.03); transition: background .15s; }
+table.holdings tbody tr:hover { background: rgba(255,255,255,.02); }
+table.holdings tbody td { padding: 14px 22px; font-size: 13px; }
+.asset-cell { display: flex; align-items: center; gap: 12px; }
+.asset-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; }
+.asset-name { font-weight: 600; color: #fff; font-size: 14px; }
+.asset-sym  { font-size: 11px; color: var(--muted); }
+.bar-cell { display: flex; align-items: center; gap: 8px; }
+.alloc-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; min-width: 80px; }
+.alloc-fill { height: 100%; border-radius: 2px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.mono { font-family: var(--mono); }
+.green { color: var(--green); }
+.red   { color: var(--red); }
+.gold  { color: var(--gold); }
+.muted { color: var(--muted); }
+
+/* TRADE HISTORY */
+.history-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 28px; }
+table.hist { width: 100%; border-collapse: collapse; }
+table.hist thead th { padding: 10px 22px; text-align: left; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; border-bottom: 1px solid var(--border); }
+table.hist tbody tr { border-bottom: 1px solid rgba(255,255,255,.03); transition: background .15s; }
+table.hist tbody tr:hover { background: rgba(255,255,255,.02); }
+table.hist tbody td { padding: 11px 22px; font-size: 12px; }
+.side-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.side-badge.buy  { background: rgba(14,203,129,.1); color: var(--green); }
+.side-badge.sell { background: rgba(246,70,93,.1);  color: var(--red); }
+
+/* STATS GRID */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+.stat-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.stat-box-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+.stat-box-val   { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; }
+.stat-box-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* EMPTY */
+.empty { padding: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+.toast-item { padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; margin-top: 6px; animation: slideUp .3s ease; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.toast-item.success { background: rgba(14,203,129,.15); border: 1px solid rgba(14,203,129,.3); color: var(--green); }
+.toast-item.error   { background: rgba(246,70,93,.15);  border: 1px solid rgba(246,70,93,.3);  color: var(--red); }
+.toast-item.info    { background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3);  color: var(--blue); }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Animate in */
+.fade-up { opacity: 0; transform: translateY(16px); animation: fadeUp .4s ease forwards; }
+@keyframes fadeUp { to { opacity:1; transform:none; } }
+.fade-up:nth-child(1) { animation-delay:.05s }
+.fade-up:nth-child(2) { animation-delay:.10s }
+.fade-up:nth-child(3) { animation-delay:.15s }
+.fade-up:nth-child(4) { animation-delay:.20s }
+/* Hamburger Menu Button */
+.hamburger-btn { display: none; flex-direction: column; gap: 4px; background: none; border: none; padding: 8px; cursor: pointer; }
+.hamburger-btn span { display: block; width: 24px; height: 2px; background: var(--text); transition: all .3s; }
+.hamburger-btn:hover span { background: var(--gold); }
+
+/* Mobile Menu */
+.mobile-menu { position: fixed; top: 0; right: -100%; width: 280px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); z-index: 200; transition: right .3s; display: flex; flex-direction: column; }
+.mobile-menu.active { right: 0; }
+.mobile-menu-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.mobile-menu-nav { display: flex; flex-direction: column; padding: 16px; gap: 8px; }
+.mobile-nav-link { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px; transition: all .2s; }
+.mobile-nav-link:hover { background: rgba(255,255,255,.04); color: var(--text); }
+.mobile-nav-link.active { background: rgba(255,255,255,.06); color: #fff; border: 1px solid var(--border); }
+.close-btn { background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 4px 8px; }
+.close-btn:hover { color: var(--gold); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-tabs { display: none; }
+    .hamburger-btn { display: flex; }
+}
+
+/* Footer Styles */
+.layout-footer {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+@media (min-width: 768px) {
+    .footer-content {
+        grid-template-columns: 2fr 1fr 2fr;
+        gap: 2rem;
+        align-items: start;
+    }
+}
+
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.logo-icon-small {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--gold), #c87700);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 10px rgba(243,186,47,.2);
+}
+
+.footer-brand-text {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.text-gold {
+    color: var(--gold);
+}
+
+.footer-description {
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 400px;
+}
+
+.footer-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.footer-version,
+.footer-mode {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.footer-label {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.footer-value {
+    color: var(--text);
+    font-family: var(--mono);
+    font-weight: 500;
+}
+
+#app-mode {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(59,130,246,.12);
+    color: var(--blue);
+    font-size: 0.75rem;
+}
+
+.footer-copyright {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+}
+
+.footer-copyright p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.footer-disclaimer {
+    font-size: 0.75rem;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+@media (max-width: 767px) {
+    .footer-content {
+        text-align: center;
+    }
+    
+    .footer-brand {
+        justify-content: center;
+    }
+    
+    .footer-description {
+        margin: 0 auto;
+    }
+    
+    .footer-meta {
+        align-items: center;
+    }
+}
+
+/* Screen reader only utility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+</style>
+</head>
+<body style="background-color: #0b0e11; color: #eaecef;">
+
+<div class="layout-wrapper">
+    <!-- Header -->
+    <header class="layout-header">
+        <!-- NAV -->
+        <nav class="nav">
+            <a class="logo" href="/">
+                <div class="logo-icon">⚡</div>
+                <div class="logo-text">Trading<span>Bot</span></div>
+            </a>
+            <div class="nav-tabs">
+                <a class="nav-tab" href="/">🏠 Piyasa</a>
+                <a class="nav-tab" href="/spot">📊 Spot</a>
+                <a class="nav-tab" href="/indicators">📈 İndikatör</a>
+            </div>
+            <div class="nav-right">
+                <div class="bal-badge">
+                    <div class="dot"></div>
+                    <span style="color:var(--muted);font-size:11px;">Toplam Bakiye</span>
+                    <span style="font-weight:700;font-family:var(--mono);" id="nav-total-balance">—</span>
+                    <span style="color:var(--muted);font-size:11px;margin-left:4px;">USDT</span>
+                </div>
+                
+                <div class="account-dropdown">
+                    <button class="account-btn" id="account-btn" onclick="toggleAccountMenu()">
+                        <span class="account-icon">👤</span>
+                        <span class="account-text">Hesabım</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="account-menu" id="account-menu">
+                        <a href="/portfolio" class="account-menu-item active">
+                            <span class="menu-icon">💼</span>
+                            <span>Portföy</span>
+                        </a>
+                        <a href="/settings" class="account-menu-item">
+                            <span class="menu-icon">⚙️</span>
+                            <span>Ayarlar</span>
+                        </a>
+                        <div class="account-menu-divider"></div>
+                        <a href="/logout" class="account-menu-item logout">
+                            <span class="menu-icon">🚪</span>
+                            <span>Çıkış Yap</span>
+                        </a>
+                    </div>
+                </div>
+
+                <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobile-menu">
+            <div class="mobile-menu-header">
+                <a class="logo" href="/">
+                    <div class="logo-icon">⚡</div>
+                    <div class="logo-text">Trading<span>Bot</span></div>
+                </a>
+                <button class="close-btn" onclick="toggleMobileMenu()">✕</button>
+            </div>
+            <div class="mobile-menu-nav">
+                <a class="mobile-nav-link" href="/">🏠 Piyasa</a>
+                <a class="mobile-nav-link" href="/spot">📊 Spot</a>
+                <a class="mobile-nav-link" href="/indicators">📈 İndikatör</a>
+                <a class="mobile-nav-link active" href="/portfolio">💼 Portföy</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="layout-main">
+        <div class="page">
+            <!-- Page Header -->
+            <h1 class="sr-only">Portföy Yönetimi</h1>
+
+    <!-- HERO CARDS -->
+    <div class="hero-row">
+        <div class="hero-card total fade-up">
+            <div class="hc-label">Toplam Portföy</div>
+            <div class="hc-val" id="hc-total">—</div>
+            <div class="hc-sub">USDT + BTC değeri</div>
+            <div class="hc-badge neu" id="hc-pnl-badge">— %</div>
+        </div>
+        <div class="hero-card usdt fade-up">
+            <div class="hc-label">USDT Bakiye</div>
+            <div class="hc-val" id="hc-usdt">—</div>
+            <div class="hc-sub" id="hc-usdt-pct">— portföyün</div>
+        </div>
+        <div class="hero-card btc fade-up">
+            <div class="hc-label">BTC Değeri</div>
+            <div class="hc-val" id="hc-btc">—</div>
+            <div class="hc-sub" id="hc-btc-qty">— BTC</div>
+        </div>
+        <div class="hero-card pnl fade-up">
+            <div class="hc-label">Başlangıçtan PnL</div>
+            <div class="hc-val" id="hc-pnl">—</div>
+            <div class="hc-sub" id="hc-start">Başlangıç: —</div>
+        </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-box-label">Toplam İşlem</div>
+            <div class="stat-box-val" id="st-trades">0</div>
+            <div class="stat-box-sub">Al + Sat emirleri</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Toplam Al</div>
+            <div class="stat-box-val green" id="st-buys">0</div>
+            <div class="stat-box-sub">Gerçekleşen alımlar</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Toplam Sat</div>
+            <div class="stat-box-val red" id="st-sells">0</div>
+            <div class="stat-box-sub">Gerçekleşen satımlar</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Ort. İşlem Hacmi</div>
+            <div class="stat-box-val gold" id="st-avg">$0</div>
+            <div class="stat-box-sub">İşlem başına USDT</div>
+        </div>
+    </div>
+
+    <!-- DONUT + PERFORMANCE -->
+    <div class="donut-section">
+        <!-- DONUT -->
+        <div class="donut-card">
+            <div class="section-title">Varlık Dağılımı</div>
+            <div class="donut-wrap">
+                <svg class="donut-svg" width="130" height="130" viewBox="0 0 130 130">
+                    <circle id="donut-bg"   cx="65" cy="65" r="50" fill="none" stroke="#1e2530" stroke-width="18"/>
+                    <circle id="donut-usdt" cx="65" cy="65" r="50" fill="none" stroke="var(--green)" stroke-width="18"
+                            stroke-dasharray="0 314" stroke-linecap="round"
+                            transform="rotate(-90 65 65)" style="transition:stroke-dasharray .7s ease"/>
+                    <circle id="donut-btc"  cx="65" cy="65" r="50" fill="none" stroke="var(--gold)"  stroke-width="18"
+                            stroke-dasharray="0 314" stroke-linecap="round"
+                            transform="rotate(-90 65 65)" style="transition:stroke-dasharray .7s ease"/>
+                    <text x="65" y="60" text-anchor="middle" fill="#fff" font-family="DM Mono" font-size="14" font-weight="700" id="donut-center-val">—</text>
+                    <text x="65" y="76" text-anchor="middle" fill="#5a6478" font-family="DM Sans" font-size="9">TOPLAM</text>
+                </svg>
+                <div class="donut-legend" id="donut-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background:var(--green)"></div>
+                        <span class="legend-name">USDT</span>
+                        <span class="legend-pct" id="leg-usdt-pct">—%</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background:var(--gold)"></div>
+                        <span class="legend-name">BTC</span>
+                        <span class="legend-pct" id="leg-btc-pct">—%</span>
+                    </div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+                        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">USDT</div>
+                        <div class="mono green" id="leg-usdt-val" style="font-size:13px;font-weight:600;">—</div>
+                        <div style="font-size:10px;color:var(--muted);margin-top:6px;margin-bottom:4px;">BTC</div>
+                        <div class="mono gold" id="leg-btc-val" style="font-size:13px;font-weight:600;">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERFORMANCE CHART -->
+        <div class="perf-card">
+            <div class="perf-header">
+                <div class="section-title" style="margin:0">Portföy Performansı</div>
+                <div class="tf-pills">
+                    <button class="tf-pill active" onclick="setPerfTf('1h',this)">1s</button>
+                    <button class="tf-pill" onclick="setPerfTf('6h',this)">6s</button>
+                    <button class="tf-pill" onclick="setPerfTf('24h',this)">24s</button>
+                    <button class="tf-pill" onclick="setPerfTf('7d',this)">7G</button>
+                </div>
+            </div>
+            <!-- TradingView Mini Chart Widget BEGIN -->
+            <div class="tradingview-widget-container" style="height:160px;width:100%;">
+                <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                {
+                  "symbol": "BINANCE:BTCUSDT",
+                  "width": "100%",
+                  "height": "100%",
+                  "locale": "tr",
+                  "dateRange": "1D",
+                  "colorTheme": "dark",
+                  "isTransparent": true,
+                  "autosize": true,
+                  "largeChartUrl": ""
+                }
+                </script>
+            </div>
+            <!-- TradingView Widget END -->
+            <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                <span style="font-size:10px;color:var(--muted);" id="perf-min">Min: —</span>
+                <span style="font-size:10px;color:var(--muted);" id="perf-max">Max: —</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOLDINGS TABLE -->
+    <div class="holdings-card">
+        <div class="card-head">
+            <div class="card-head-title">Varlıklar</div>
+            <span style="font-size:11px;color:var(--muted);" id="last-update">—</span>
+        </div>
+        <table class="holdings">
+            <thead>
+                <tr>
+                    <th>Varlık</th>
+                    <th>Miktar</th>
+                    <th>Güncel Fiyat</th>
+                    <th>Değer (USD)</th>
+                    <th>Dağılım</th>
+                    <th>24s Değişim</th>
+                </tr>
+            </thead>
+            <tbody id="holdings-body">
+                <tr><td colspan="6" class="empty">Veriler yükleniyor…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TRADE HISTORY -->
+    <div class="history-card">
+        <div class="card-head">
+            <div class="card-head-title">Son İşlemler</div>
+            <span style="font-size:11px;color:var(--muted);">Son 20 emir</span>
+        </div>
+        <table class="hist">
+            <thead>
+                <tr>
+                    <th>Zaman</th>
+                    <th>İşlem</th>
+                    <th>Tür</th>
+                    <th>Miktar (BTC)</th>
+                    <th>Fiyat</th>
+                    <th>Toplam (USDT)</th>
+                </tr>
+            </thead>
+            <tbody id="history-body">
+                <tr><td colspan="6" class="empty">Henüz işlem yok</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="layout-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <div class="footer-brand">
+                        <div class="logo-icon-small">⚡</div>
+                        <span class="footer-brand-text">TradingBot<span class="text-gold">Pro</span></span>
+                    </div>
+                    <p class="footer-description">
+                        Kripto ticaret otomasyon sistemi - 7/24 otomatik alım-satım
+                    </p>
+                </div>
+                
+                <div class="footer-meta">
+                    <div class="footer-version">
+                        <span class="footer-label">Versiyon:</span>
+                        <span class="footer-value" id="app-version">1.0.0</span>
+                    </div>
+                    <div class="footer-mode">
+                        <span class="footer-label">Mod:</span>
+                        <span class="footer-value" id="app-mode">Testnet</span>
+                    </div>
+                </div>
+                
+                <div class="footer-copyright">
+                    <p>&copy; <span id="current-year">2024</span> TradingBot Pro. Tüm hakları saklıdır.</p>
+                    <p class="footer-disclaimer">
+                        Risk Uyarısı: Kripto para ticareti yüksek risk içerir. Yatırım kararlarınızı dikkatli alın.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let portfolio     = { USDT: 0, BTC: 0 };
+let currentPrice  = 0;
+let startingValue = 0;
+let change24h     = 0;
+let tradeHistory  = [];
+let perfHistory   = [];   // [{time, value}]
+let perfTf        = '1h';
+let socket        = null;
+
+// ─── SOCKET ───────────────────────────────────────────────────────────────────
+function connectSocket() {
+    console.log('🔌 Connecting to socket.io...');
+    socket = io({ 
+        transports: ['polling', 'websocket'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+    });
+    
+    socket.on('connect', () => {
+        console.log('✅ Socket connected!');
+    });
+    
+    socket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error);
+    });
+    
+    socket.on('disconnect', (reason) => {
+        console.warn('⚠️ Socket disconnected:', reason);
+    });
+
+    socket.on('pro_data_stream', d => {
+        currentPrice  = d.price;
+        startingValue = d.starting_value || startingValue;
+        change24h     = d.change24 || 0;
+        
+        // Portfolio'yu güncelle
+        if (d.portfolio) {
+            portfolio = d.portfolio;
+        }
+
+        // Track portfolio value over time
+        const btcBalance = portfolio.BTC || 0;
+        const total = (portfolio.USDT || 0) + btcBalance * currentPrice;
+        perfHistory.push({ time: Date.now(), value: total });
+        if (perfHistory.length > 500) perfHistory.shift();
+
+        updateAll();
+    });
+
+    socket.on('trade_history_update', h => {
+        tradeHistory = h;
+        renderHistory();
+        renderStats();
+    });
+
+    socket.on('portfolio_update', p => {
+        portfolio = { ...portfolio, ...p };
+        updateAll();
+    });
+
+    socket.emit('request_history', {});
+}
+
+// ─── UPDATE ALL ───────────────────────────────────────────────────────────────
+function updateAll() {
+    const btcBalance = portfolio.BTC || 0;
+    const usdtBalance = portfolio.USDT || 0;
+    const total   = usdtBalance + btcBalance * currentPrice;
+    const btcVal  = btcBalance * currentPrice;
+    const usdtPct = total > 0 ? (usdtBalance / total * 100) : 0;
+    const btcPct  = total > 0 ? (btcVal / total * 100) : 0;
+    const pnl     = startingValue > 0 ? total - startingValue : 0;
+    const pnlPct  = startingValue > 0 ? (pnl / startingValue * 100) : 0;
+
+    // Hero cards
+    document.getElementById('hc-total').textContent = '$' + fmt2(total);
+    document.getElementById('hc-usdt').textContent  = '$' + fmt2(usdtBalance);
+    document.getElementById('hc-btc').textContent   = '$' + fmt2(btcVal);
+    document.getElementById('hc-btc-qty').textContent = btcBalance.toFixed(6) + ' BTC';
+    document.getElementById('hc-usdt-pct').textContent = usdtPct.toFixed(1) + '% portföyün';
+
+    const pnlEl = document.getElementById('hc-pnl');
+    pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + fmt2(Math.abs(pnl));
+    pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    document.getElementById('hc-start').textContent = 'Başlangıç: $' + fmt2(startingValue);
+
+    const badge = document.getElementById('hc-pnl-badge');
+    badge.textContent = (pnlPct >= 0 ? '▲ +' : '▼ ') + pnlPct.toFixed(2) + '%';
+    badge.className   = 'hc-badge ' + (pnlPct > 0 ? 'pos' : pnlPct < 0 ? 'neg' : 'neu');
+
+    // Nav
+    document.getElementById('nav-usdt').textContent = '$' + fmt2(usdtBalance);
+    document.getElementById('nav-btc').textContent  = btcBalance.toFixed(5);
+
+    // Donut
+    updateDonut(usdtPct, btcPct, total);
+
+    // Holdings
+    renderHoldings(total, usdtPct, btcPct, btcVal);
+
+    // Perf chart
+    drawPerfChart();
+
+    // Last update
+    document.getElementById('last-update').textContent = 'Son güncelleme: ' + new Date().toLocaleTimeString('tr-TR');
+}
+
+// ─── DONUT ────────────────────────────────────────────────────────────────────
+function updateDonut(usdtPct, btcPct, total) {
+    const circ = 314; // 2πr ≈ 314
+    const usdtDash = circ * usdtPct / 100;
+    const btcDash  = circ * btcPct  / 100;
+
+    // USDT arc starts at 0
+    const usdtEl = document.getElementById('donut-usdt');
+    usdtEl.setAttribute('stroke-dasharray', `${usdtDash} ${circ - usdtDash}`);
+    usdtEl.setAttribute('stroke-dashoffset', '0');
+
+    // BTC arc starts after USDT
+    const btcEl = document.getElementById('donut-btc');
+    btcEl.setAttribute('stroke-dasharray', `${btcDash} ${circ - btcDash}`);
+    btcEl.setAttribute('stroke-dashoffset', -usdtDash);
+
+    document.getElementById('donut-center-val').textContent = '$' + fmtK(total);
+    document.getElementById('leg-usdt-pct').textContent = usdtPct.toFixed(1) + '%';
+    document.getElementById('leg-btc-pct').textContent  = btcPct.toFixed(1)  + '%';
+    document.getElementById('leg-usdt-val').textContent = '$' + fmt2(portfolio.USDT);
+    document.getElementById('leg-btc-val').textContent  = '$' + fmt2(portfolio.BTC * currentPrice);
+}
+
+// ─── HOLDINGS ─────────────────────────────────────────────────────────────────
+function renderHoldings(total, usdtPct, btcPct, btcVal) {
+    const body = document.getElementById('holdings-body');
+    const ch = change24h || 0;
+    const btcBalance = portfolio.BTC || 0;
+    const usdtBalance = portfolio.USDT || 0;
+
+    body.innerHTML = `
+        <tr>
+            <td>
+                <div class="asset-cell">
+                    <div class="asset-icon" style="background:rgba(14,203,129,.12);color:var(--green);">$</div>
+                    <div>
+                        <div class="asset-name">Tether</div>
+                        <div class="asset-sym">USDT</div>
+                    </div>
+                </div>
+            </td>
+            <td class="mono">${portfolio.USDT.toFixed(2)}</td>
+            <td class="mono muted">$1.0000</td>
+            <td class="mono gold">$${fmt2(portfolio.USDT)}</td>
+            <td>
+                <div class="bar-cell">
+                    <div class="alloc-bar"><div class="alloc-fill" style="width:${usdtPct}%;background:var(--green);"></div></div>
+                    <span class="mono muted" style="font-size:11px;">${usdtPct.toFixed(1)}%</span>
+                </div>
+            </td>
+            <td class="mono muted">—</td>
+        </tr>
+        <tr>
+            <td>
+                <div class="asset-cell">
+                    <div class="asset-icon" style="background:rgba(243,186,47,.12);color:var(--gold);">₿</div>
+                    <div>
+                        <div class="asset-name">Bitcoin</div>
+                        <div class="asset-sym">BTC</div>
+                    </div>
+                </div>
+            </td>
+            <td class="mono">${portfolio.BTC.toFixed(6)}</td>
+            <td class="mono">$${currentPrice.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            <td class="mono gold">$${fmt2(btcVal)}</td>
+            <td>
+                <div class="bar-cell">
+                    <div class="alloc-bar"><div class="alloc-fill" style="width:${btcPct}%;background:var(--gold);"></div></div>
+                    <span class="mono muted" style="font-size:11px;">${btcPct.toFixed(1)}%</span>
+                </div>
+            </td>
+            <td class="mono ${ch >= 0 ? 'green' : 'red'}">${ch >= 0 ? '+' : ''}${ch.toFixed(2)}%</td>
+        </tr>
+    `;
+}
+
+// ─── HISTORY TABLE ────────────────────────────────────────────────────────────
+function renderHistory() {
+    const body = document.getElementById('history-body');
+    if (!tradeHistory.length) {
+        body.innerHTML = '<tr><td colspan="6" class="empty">Henüz işlem yok</td></tr>'; return;
+    }
+    body.innerHTML = tradeHistory.map(t => `
+        <tr>
+            <td class="mono muted">${t.time}</td>
+            <td><span class="side-badge ${t.side === 'BUY' ? 'buy' : 'sell'}">${t.side === 'BUY' ? '▲' : '▼'} ${t.side}</span></td>
+            <td class="muted">${t.type}</td>
+            <td class="mono">${parseFloat(t.qty).toFixed(5)}</td>
+            <td class="mono">$${parseFloat(t.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            <td class="mono gold">$${parseFloat(t.value).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        </tr>
+    `).join('');
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats() {
+    const buys  = tradeHistory.filter(t => t.side === 'BUY');
+    const sells = tradeHistory.filter(t => t.side === 'SELL');
+    const total = tradeHistory.length;
+    const avg   = total > 0 ? tradeHistory.reduce((s, t) => s + parseFloat(t.value||0), 0) / total : 0;
+
+    document.getElementById('st-trades').textContent = total;
+    document.getElementById('st-buys').textContent   = buys.length;
+    document.getElementById('st-sells').textContent  = sells.length;
+    document.getElementById('st-avg').textContent    = '$' + fmt2(avg);
+}
+
+// ─── PERFORMANCE CHART ────────────────────────────────────────────────────────
+function setPerfTf(tf, btn) {
+    perfTf = tf;
+    document.querySelectorAll('.tf-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    drawPerfChart();
+}
+
+function drawPerfChart() {
+    const canvas = document.getElementById('perf-canvas');
+    const ctx    = canvas.getContext('2d');
+    const dpr    = window.devicePixelRatio || 1;
+    const rect   = canvas.getBoundingClientRect();
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const W = rect.width, H = rect.height;
+
+    // Filter by time window
+    const now   = Date.now();
+    const tfMs  = { '1h': 3600000, '6h': 21600000, '24h': 86400000, '7d': 604800000 };
+    const cutoff = now - (tfMs[perfTf] || 3600000);
+    let pts = perfHistory.filter(p => p.time >= cutoff);
+
+    if (pts.length < 2) {
+        // Draw placeholder
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#5a6478';
+        ctx.font = '12px DM Sans';
+        ctx.textAlign = 'center';
+        ctx.fillText('Veri biriktirilüyor…', W/2, H/2);
+        return;
+    }
+
+    const vals   = pts.map(p => p.value);
+    const minVal = Math.min(...vals);
+    const maxVal = Math.max(...vals);
+    const range  = maxVal - minVal || 1;
+
+    const pad = { top: 12, right: 12, bottom: 24, left: 12 };
+    const gW  = W - pad.left - pad.right;
+    const gH  = H - pad.top  - pad.bottom;
+
+    const x = (i) => pad.left + (i / (pts.length - 1)) * gW;
+    const y = (v) => pad.top  + (1 - (v - minVal) / range) * gH;
+
+    // Gradient fill
+    const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + gH);
+    const isUp = vals[vals.length-1] >= vals[0];
+    const col  = isUp ? '#0ecb81' : '#f6465d';
+    gradient.addColorStop(0,   isUp ? 'rgba(14,203,129,.25)' : 'rgba(246,70,93,.25)');
+    gradient.addColorStop(1,   'rgba(0,0,0,0)');
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Fill area
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(pts[0].value));
+    pts.forEach((p, i) => { if (i > 0) ctx.lineTo(x(i), y(p.value)); });
+    ctx.lineTo(x(pts.length-1), pad.top + gH);
+    ctx.lineTo(x(0), pad.top + gH);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(pts[0].value));
+    pts.forEach((p, i) => { if (i > 0) ctx.lineTo(x(i), y(p.value)); });
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = 2;
+    ctx.lineJoin    = 'round';
+    ctx.stroke();
+
+    // Last dot
+    const lx = x(pts.length-1), ly = y(vals[vals.length-1]);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 4, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Time labels
+    ctx.fillStyle = '#5a6478';
+    ctx.font = '9px DM Mono';
+    ctx.textAlign = 'left';
+    const t0 = new Date(pts[0].time);
+    ctx.fillText(t0.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}), pad.left, H - 4);
+    ctx.textAlign = 'right';
+    const tN = new Date(pts[pts.length-1].time);
+    ctx.fillText(tN.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}), W - pad.right, H - 4);
+
+    // Min / Max labels
+    document.getElementById('perf-min').textContent = 'Min: $' + fmt2(minVal);
+    document.getElementById('perf-max').textContent = 'Max: $' + fmt2(maxVal);
+}
+
+// ─── FORMAT HELPERS ───────────────────────────────────────────────────────────
+function fmt2(n) {
+    return parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtK(n) {
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+    return fmt2(n);
+
+}
+
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    const d = document.createElement('div');
+    d.className = `toast-item ${type}`;
+    d.textContent = msg;
+    t.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    connectSocket();
+
+    // Redraw chart on resize
+    window.addEventListener('resize', drawPerfChart);
+
+    // Also fetch balance directly
+    fetch('/api/balance').then(r => r.json()).then(d => {
+        if (!d.error) {
+            portfolio.USDT = d.USDT || 0;
+            portfolio.BTC  = d.BTC  || 0;
+            startingValue  = d.starting_value || 0;
+        }
+    }).catch(() => {});
+});
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+    document.getElementById('mobile-menu').classList.toggle('active');
+}
+
+// Footer: Set current year dynamically
+document.getElementById('current-year').textContent = new Date().getFullYear();
+
+// Footer: Set app mode from environment or config
+const isTestnet = window.location.hostname.includes('testnet') || 
+                  localStorage.getItem('trading_mode') === 'testnet';
+document.getElementById('app-mode').textContent = isTestnet ? 'Testnet' : 'Live Trading';
+document.getElementById('app-mode').style.background = isTestnet ? 
+    'rgba(59,130,246,.12)' : 'rgba(14,203,129,.12)';
+document.getElementById('app-mode').style.color = isTestnet ? 
+    'var(--blue)' : 'var(--green)';
+// Account menu toggle
+function toggleAccountMenu() {
+    const menu = document.getElementById('account-menu');
+    const btn = document.getElementById('account-btn');
+    menu?.classList.toggle('active');
+    btn?.classList.toggle('active');
+}
+
+document.addEventListener('click', function(event) {
+    const accountDropdown = document.querySelector('.account-dropdown');
+    if (accountDropdown && !accountDropdown.contains(event.target)) {
+        document.getElementById('account-menu')?.classList.remove('active');
+        document.getElementById('account-btn')?.classList.remove('active');
+    }
+});
+
+async function loadTotalBalance() {
+    try {
+        const r = await fetch('/api/balance');
+        const d = await r.json();
+        if (!d.error) {
+            const priceRes = await fetch('/api/market');
+            const marketData = await priceRes.json();
+            const btcPrice = marketData.find(c => c.symbol?.toLowerCase() === 'btc')?.current_price || 0;
+            const totalBalance = parseFloat(d.USDT || 0) + (parseFloat(d.BTC || 0) * btcPrice);
+            const balanceEl = document.getElementById('nav-total-balance');
+            if (balanceEl) {
+                balanceEl.textContent = totalBalance.toLocaleString('tr-TR', {maximumFractionDigits:2});
+            }
+        }
+    } catch(e) {}
+}
+
+loadTotalBalance();
+setInterval(loadTotalBalance, 30000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="tr" style="background-color: #0b0e11;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>TradingBot Pro — Spot</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<!-- TradingView Widget Script -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+:root {
+    --bg: #0b0e11;
+    --panel: #161a1e;
+    --panel2: #1e2329;
+    --border: #2b3139;
+    --gold: #f3ba2f;
+    --green: #0ecb81;
+    --red: #f6465d;
+    --text: #eaecef;
+    --muted: #848e9c;
+    --blue: #3861fb;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+/* NAV */
+.nav { height: 56px; display: flex; align-items: center; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; gap: 0; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 32px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--gold), #c87700); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; box-shadow: 0 0 14px rgba(243,186,47,.3); }
+.logo-text { font-weight: 700; font-size: 16px; color: #fff; letter-spacing: -.4px; }
+.logo-text span { color: var(--gold); }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all .15s; border: 1px solid transparent; }
+.nav-tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+.nav-tab.active { color: #fff; background: rgba(255,255,255,.06); border-color: var(--border); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.bal-badge { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 12px; }
+.bal-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+/* Account Dropdown */
+.account-dropdown{position:relative;}
+.account-btn{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;transition:all .2s;color:var(--text);font-family:var(--font);font-size:13px;font-weight:500;}
+.account-btn:hover{background:var(--bg-hover);border-color:var(--gold);}
+.account-icon{font-size:16px;}
+.account-text{font-weight:600;}
+.dropdown-arrow{font-size:10px;transition:transform .2s;}
+.account-btn.active .dropdown-arrow{transform:rotate(180deg);}
+.account-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px;opacity:0;visibility:hidden;transform:translateY(-10px);transition:all .2s;z-index:1000;}
+.account-menu.active{opacity:1;visibility:visible;transform:translateY(0);}
+.account-menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--text);text-decoration:none;font-size:14px;font-weight:500;transition:all .15s;border-bottom:1px solid rgba(255,255,255,.03);}
+.account-menu-item:last-child{border-bottom:none;}
+.account-menu-item:hover{background:rgba(255,255,255,.04);color:#fff;}
+.account-menu-item.logout{color:var(--red);}
+.account-menu-item.logout:hover{background:rgba(246,70,93,.1);}
+.menu-icon{font-size:18px;width:24px;text-align:center;}
+.account-menu-divider{height:1px;background:var(--border);margin:4px 0;}
+.mobile-menu-divider{height:1px;background:var(--border);margin:8px 0;}
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 280px 1fr 320px; grid-template-rows: 48px 1fr 260px; height: calc(100vh - 56px); overflow: hidden; }
+
+/* SYMBOL BAR */
+.symbol-bar { grid-column: 1/-1; display: flex; align-items: center; padding: 0 16px; gap: 24px; background: var(--panel); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.symbol-select { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel2); transition: all .15s; }
+.symbol-select:hover { border-color: var(--gold); }
+.symbol-name { font-weight: 700; font-size: 15px; color: #fff; }
+.symbol-pair { font-size: 11px; color: var(--muted); }
+.price-big { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; }
+.stat-item { display: flex; flex-direction: column; gap: 2px; }
+.stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.stat-v { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.sep { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; }
+.auto-badge { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all .2s; margin-left: auto; }
+.auto-badge.on  { color: var(--green); border-color: rgba(14,203,129,.3); background: rgba(14,203,129,.06); }
+.auto-badge.off { color: var(--red);   border-color: rgba(246,70,93,.3);   background: rgba(246,70,93,.06); }
+
+/* ORDERBOOK */
+.orderbook { grid-row: 2/3; overflow: hidden; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border); }
+.panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.ob-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 6px 14px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.ob-cols span:last-child { text-align: right; }
+.ob-cols span:nth-child(2) { text-align: center; }
+.ob-rows { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.ob-asks, .ob-bids { flex: 1; overflow: hidden; }
+.ob-row { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 3px 14px; font-family: var(--mono); font-size: 11px; position: relative; cursor: pointer; transition: background .1s; }
+.ob-row:hover { background: rgba(255,255,255,.03); }
+.ob-row .bar { position: absolute; top: 0; right: 0; bottom: 0; opacity: .12; }
+.ob-row.ask .bar { background: var(--red); }
+.ob-row.bid .bar { background: var(--green); }
+.ob-row.ask .price { color: var(--red); }
+.ob-row.bid .price { color: var(--green); }
+.ob-row .amt { color: var(--text); }
+.ob-row .total { color: var(--muted); text-align: right; }
+.spread-row { padding: 6px 14px; text-align: center; font-family: var(--mono); font-size: 13px; font-weight: 700; color: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--panel2); }
+.spread-sub { font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+/* CHART */
+.chart-area { grid-row: 2/3; display: flex; flex-direction: column; background: var(--bg); border-right: 1px solid var(--border); }
+.chart-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--panel); }
+.tf-btn { padding: 4px 10px; border-radius: 4px; border: none; background: none; color: var(--muted); font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.tf-btn:hover, .tf-btn.active { color: #fff; background: rgba(255,255,255,.06); }
+.ind-btn { margin-left: auto; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: none; color: var(--muted); font-family: var(--font); font-size: 11px; cursor: pointer; transition: all .15s; }
+.ind-btn:hover { border-color: var(--blue); color: var(--blue); }
+#chart-container { flex: 1; }
+
+/* TRADE PANEL */
+.trade-panel { grid-row: 2/3; display: flex; flex-direction: column; background: var(--panel); overflow: hidden; }
+.tab-row { display: flex; border-bottom: 1px solid var(--border); }
+.tab-btn { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); border: none; background: none; font-family: var(--font); transition: all .15s; position: relative; }
+.tab-btn.buy.active  { color: var(--green); }
+.tab-btn.sell.active { color: var(--red); }
+.tab-btn.active::after { content:''; position: absolute; bottom:0; left: 20%; right: 20%; height: 2px; border-radius: 2px 2px 0 0; background: currentColor; }
+.trade-form { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; }
+.otype-row { display: flex; gap: 4px; }
+.otype-btn { flex: 1; padding: 5px 8px; border-radius: 5px; border: 1px solid var(--border); background: none; color: var(--muted); font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.otype-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(243,186,47,.06); }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: flex; justify-content: space-between; }
+.form-label .avail { font-size: 10px; color: var(--muted); font-weight: 400; }
+.form-inp { background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: var(--mono); font-size: 13px; padding: 9px 12px; outline: none; width: 100%; transition: border-color .2s; }
+.form-inp:focus { border-color: var(--blue); }
+.inp-wrap { position: relative; }
+.inp-unit { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 600; color: var(--muted); pointer-events: none; }
+.pct-row { display: flex; gap: 4px; }
+.pct-btn { flex: 1; padding: 5px 4px; border-radius: 5px; border: 1px solid var(--border); background: none; color: var(--muted); font-family: var(--font); font-size: 11px; cursor: pointer; transition: all .15s; text-align: center; }
+.pct-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(243,186,47,.06); }
+.sltp-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 0; font-size: 11px; color: var(--muted); user-select: none; }
+.sltp-toggle:hover { color: var(--text); }
+.toggle-sw { width: 28px; height: 16px; border-radius: 8px; background: var(--border); position: relative; transition: background .2s; }
+.toggle-sw.on { background: var(--blue); }
+.toggle-sw::after { content:''; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #fff; top: 2px; left: 2px; transition: left .2s; }
+.toggle-sw.on::after { left: 14px; }
+.sltp-fields { display: flex; flex-direction: column; gap: 8px; }
+.lev-row { display: flex; align-items: center; gap: 10px; }
+.lev-inp { width: 60px; }
+.lev-label { font-size: 11px; color: var(--muted); }
+.exec-btn { padding: 12px; border-radius: 8px; border: none; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; width: 100%; margin-top: 4px; }
+.exec-btn.buy  { background: var(--green); color: #000; }
+.exec-btn.sell { background: var(--red);   color: #fff; }
+.exec-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+.exec-btn:active { transform: translateY(0); }
+.order-preview { background: var(--panel2); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+.preview-row { display: flex; justify-content: space-between; font-size: 11px; }
+.preview-row .lbl { color: var(--muted); }
+.preview-row .val { font-family: var(--mono); color: var(--text); }
+
+/* BOTTOM: OPEN ORDERS + HISTORY */
+.bottom-panel { grid-column: 1/-1; grid-row: 3/4; background: var(--panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.bottom-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.btab { padding: 8px 18px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none; font-family: var(--font); transition: all .15s; border-bottom: 2px solid transparent; }
+.btab.active { color: #fff; border-bottom-color: var(--gold); }
+.bottom-content { flex: 1; overflow-y: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { padding: 8px 14px; text-align: left; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,.03); }
+.data-table td.mono { font-family: var(--mono); }
+.buy-txt  { color: var(--green); font-weight: 600; }
+.sell-txt { color: var(--red);   font-weight: 600; }
+.cancel-btn { padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(246,70,93,.3); background: rgba(246,70,93,.06); color: var(--red); font-size: 10px; cursor: pointer; font-family: var(--font); transition: all .15s; }
+.cancel-btn:hover { background: rgba(246,70,93,.15); }
+
+/* ALERT BANNER */
+.alert-banner { padding: 7px 14px; font-size: 12px; font-weight: 600; text-align: center; border-bottom: 1px solid var(--border); display: none; animation: fadein .3s; }
+.alert-banner.buy  { background: rgba(14,203,129,.1);  color: var(--green); }
+.alert-banner.sell { background: rgba(246,70,93,.1);   color: var(--red); }
+@keyframes fadein { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
+
+/* INDICATORS OVERLAY */
+.ind-panel { display: none; position: absolute; top: 56px; left: 0; right: 0; bottom: 0; z-index: 50; background: rgba(11,14,17,.8); backdrop-filter: blur(6px); }
+
+/* Toast */
+.toast { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+.toast-item { padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; margin-top: 6px; animation: slideUp .3s ease; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.toast-item.success { background: rgba(14,203,129,.15); border: 1px solid rgba(14,203,129,.3); color: var(--green); }
+.toast-item.error   { background: rgba(246,70,93,.15);  border: 1px solid rgba(246,70,93,.3);  color: var(--red); }
+.toast-item.info    { background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3);  color: var(--blue); }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+
+/* RSI mini widget */
+.rsi-bar-wrap { padding: 0 14px 10px; }
+.rsi-track { height: 4px; background: var(--border); border-radius: 2px; position: relative; margin: 6px 0 3px; }
+.rsi-fill { height: 100%; border-radius: 2px; transition: width .4s, background .4s; }
+.rsi-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.empty-state { padding: 30px; text-align: center; color: var(--muted); font-size: 12px; }
+
+/* Profit badge */
+.pnl-badge { padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.pnl-badge.pos { background: rgba(14,203,129,.1); color: var(--green); }
+.pnl-badge.neg { background: rgba(246,70,93,.1);  color: var(--red); }
+/* Consensus slider */
+.consensus-wrap { display:flex; align-items:center; gap:8px; margin-left:12px; padding: 0 10px; border-left:1px solid var(--border); }
+.consensus-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+.consensus-val { font-family:var(--mono); font-size:12px; font-weight:700; color:var(--gold); min-width:28px; text-align:center; }
+input[type=range].c-slider { appearance:none; -webkit-appearance:none; width:70px; height:4px; border-radius:2px; background:var(--border); outline:none; cursor:pointer; }
+input[type=range].c-slider::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--gold); cursor:pointer; box-shadow:0 0 6px rgba(243,186,47,.4); }
+/* PnL bar */
+.pnl-bar { display:flex; align-items:center; gap:6px; padding:3px 10px; border-radius:6px; font-size:11px; border:1px solid var(--border); background:var(--panel2); }
+.pnl-bar .lbl { font-size:10px; color:var(--muted); font-weight:600; }
+.pnl-bar .val { font-family:var(--mono); font-weight:700; }
+/* Hamburger Menu Button */
+.hamburger-btn { display: none; flex-direction: column; gap: 4px; background: none; border: none; padding: 8px; cursor: pointer; }
+.hamburger-btn span { display: block; width: 24px; height: 2px; background: var(--text); transition: all .3s; }
+.hamburger-btn:hover span { background: var(--gold); }
+
+/* Mobile Menu */
+.mobile-menu { position: fixed; top: 0; right: -100%; width: 280px; height: 100vh; background: var(--panel); border-left: 1px solid var(--border); z-index: 200; transition: right .3s; display: flex; flex-direction: column; }
+.mobile-menu.active { right: 0; }
+.mobile-menu-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.mobile-menu-nav { display: flex; flex-direction: column; padding: 16px; gap: 8px; }
+.mobile-nav-link { display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 8px; transition: all .2s; }
+.mobile-nav-link:hover { background: rgba(255,255,255,.04); color: var(--text); }
+.mobile-nav-link.active { background: rgba(255,255,255,.06); color: #fff; border: 1px solid var(--border); }
+.close-btn { background: none; border: none; color: var(--text); font-size: 24px; cursor: pointer; padding: 4px 8px; }
+.close-btn:hover { color: var(--gold); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-tabs { display: none; }
+    .hamburger-btn { display: flex; }
+}
+</style>
+</head>
+<body style="background-color: #0b0e11; color: #eaecef;">
+
+<!-- NAV -->
+<nav class="nav">
+    <a class="logo" href="/">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Trading<span>Bot</span></div>
+    </a>
+    <div class="nav-tabs">
+        <a class="nav-tab" href="/">🏠 Piyasa</a>
+        <a class="nav-tab active" href="/spot">📊 Spot</a>
+        <a class="nav-tab" href="/indicators">📈 İndikatör</a>
+    </div>
+    <div class="nav-right">
+        <div class="bal-badge">
+            <div class="dot"></div>
+            <span style="color:var(--muted);font-size:11px;">Toplam Bakiye</span>
+            <span style="font-weight:700;font-family:var(--mono);" id="nav-total-balance">—</span>
+            <span style="color:var(--muted);font-size:11px;margin-left:4px;">USDT</span>
+        </div>
+        
+        <div class="account-dropdown">
+            <button class="account-btn" id="account-btn" onclick="toggleAccountMenu()">
+                <span class="account-icon">👤</span>
+                <span class="account-text">Hesabım</span>
+                <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="account-menu" id="account-menu">
+                <a href="/portfolio" class="account-menu-item">
+                    <span class="menu-icon">💼</span>
+                    <span>Portföy</span>
+                </a>
+                <a href="/settings" class="account-menu-item">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Ayarlar</span>
+                </a>
+                <div class="account-menu-divider"></div>
+                <a href="/logout" class="account-menu-item logout">
+                    <span class="menu-icon">🚪</span>
+                    <span>Çıkış Yap</span>
+                </a>
+            </div>
+        </div>
+
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-header">
+        <a class="logo" href="/">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">Trading<span>Bot</span></div>
+        </a>
+        <button class="close-btn" onclick="toggleMobileMenu()">✕</button>
+    </div>
+    <div class="mobile-menu-nav">
+        <a class="mobile-nav-link" href="/">🏠 Piyasa</a>
+        <a class="mobile-nav-link active" href="/spot">📊 Spot</a>
+        <a class="mobile-nav-link" href="/indicators">📈 İndikatör</a>
+        <a class="mobile-nav-link" href="/portfolio">💼 Portföy</a>
+    </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner" id="alert-banner"></div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+    <!-- SYMBOL BAR -->
+    <div class="symbol-bar">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;font-weight:700;color:#fff;" id="sym-name">BTC/USDT</span>
+            <span style="font-size:11px;color:var(--muted);background:var(--panel2);padding:2px 8px;border-radius:4px;">Spot</span>
+            <span style="font-size:10px;color:var(--muted);font-style:italic;">Grafikten sembol değiştirebilirsiniz</span>
+        </div>
+
+        <div>
+            <div class="price-big" id="sym-price">—</div>
+            <div style="font-size:11px;font-family:var(--mono);" id="sym-change">—</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="stat-item">
+            <span class="stat-lbl">24s Yüksek</span>
+            <span class="stat-v" id="stat-high" style="color:var(--green);">—</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-lbl">24s Düşük</span>
+            <span class="stat-v" id="stat-low" style="color:var(--red);">—</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-lbl">Hacim (BTC)</span>
+            <span class="stat-v" id="stat-vol">—</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-lbl">SMA 5</span>
+            <span class="stat-v" id="stat-sma5" style="color:var(--green);">—</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-lbl">SMA 9</span>
+            <span class="stat-v" id="stat-sma9" style="color:var(--blue);">—</span>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- LEVERAGE -->
+        <div class="stat-item">
+            <span class="stat-lbl">Kaldıraç</span>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+                <select id="lev-select" style="background:var(--panel2);border:1px solid var(--border);color:var(--gold);font-family:var(--mono);font-size:12px;font-weight:700;border-radius:5px;padding:3px 6px;outline:none;cursor:pointer;" onchange="setLeverage(this.value)">
+                    <option value="1">1x</option>
+                    <option value="2">2x</option>
+                    <option value="3">3x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- CONSENSUS SLIDER - KALDIRILDI -->
+        
+        <!-- PNL BAR -->
+        <div class="pnl-bar" id="pnl-bar" style="margin-left:8px;">
+            <span class="lbl">PnL</span>
+            <span class="val" id="pnl-val" style="color:var(--muted)">—</span>
+        </div>
+        <!-- AUTO TRADE TOGGLE -->
+        <div class="auto-badge on" id="auto-badge" onclick="toggleAuto()" style="margin-left:8px;">
+            <span id="auto-icon">🤖</span>
+            <span id="auto-text">Oto: AKTİF</span>
+        </div>
+    </div>
+
+    <!-- ORDERBOOK -->
+    <div class="orderbook">
+        <div class="panel-head">
+            <span>Emir Defteri</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:400;">BTCUSDT</span>
+        </div>
+        <div class="ob-cols">
+            <span>Fiyat (USDT)</span>
+            <span style="text-align:center;">Miktar (BTC)</span>
+            <span>Toplam</span>
+        </div>
+        <div class="ob-rows">
+            <div class="ob-asks" id="ob-asks">
+                <div class="ob-row ask" style="opacity:.3;"><span class="price">—</span><span class="amt">—</span><span class="total">—</span></div>
+            </div>
+            <div class="spread-row" id="ob-spread">— <span class="spread-sub">Spread</span></div>
+            <div class="ob-bids" id="ob-bids">
+                <div class="ob-row bid" style="opacity:.3;"><span class="price">—</span><span class="amt">—</span><span class="total">—</span></div>
+            </div>
+        </div>
+
+        <!-- SMA Mini Widget -->
+        <div style="border-top:1px solid var(--border);padding:10px 14px 4px;">
+            <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:8px;">SMA Stratejisi</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:11px;color:var(--green);">SMA 5: <span id="sma5-val-sm">—</span></span>
+                <span style="font-size:11px;color:var(--blue);">SMA 9: <span id="sma9-val-sm">—</span></span>
+            </div>
+            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px;" id="sma-signal-sm">Sinyal bekleniyor...</div>
+        </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-area">
+        <div class="chart-toolbar">
+            <button class="tf-btn active" onclick="setTf('1m',this)">1d</button>
+            <button class="tf-btn" onclick="setTf('5m',this)">5d</button>
+            <button class="tf-btn" onclick="setTf('15m',this)">15d</button>
+            <button class="tf-btn" onclick="setTf('1h',this)">1s</button>
+            <button class="tf-btn" onclick="setTf('4h',this)">4s</button>
+            <button class="tf-btn" onclick="setTf('1d',this)">1G</button>
+            <div style="width:1px;height:20px;background:var(--border);margin:0 6px;"></div>
+            <span style="font-size:11px;color:var(--muted);" id="chart-ohlc"></span>
+            <button class="ind-btn" style="margin-left:auto;" onclick="showToast('İndikatör paneli için İndikatör sekmesine git','info')">📊 İndikatörler</button>
+        </div>
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container" style="height:calc(100% - 40px);width:100%;">
+            <div id="tradingview_spot_chart" style="height:100%;width:100%;"></div>
+        </div>
+        <!-- TradingView Widget END -->
+    </div>
+
+    <!-- TRADE PANEL -->
+    <div class="trade-panel">
+        <div class="tab-row">
+            <button class="tab-btn buy active"  id="tab-buy"  onclick="switchTab('buy')">AL</button>
+            <button class="tab-btn sell"         id="tab-sell" onclick="switchTab('sell')">SAT</button>
+        </div>
+
+        <div class="trade-form" id="trade-form">
+            <!-- Order type -->
+            <div class="otype-row">
+                <button class="otype-btn active" id="ot-market" onclick="setOrderType('MARKET',this)">Market</button>
+                <button class="otype-btn"        id="ot-limit"  onclick="setOrderType('LIMIT',this)">Limit</button>
+            </div>
+
+            <!-- Limit price (only for LIMIT) -->
+            <div class="form-group" id="limit-price-group" style="display:none;">
+                <div class="form-label">Limit Fiyat</div>
+                <div class="inp-wrap">
+                    <input class="form-inp" id="limit-price" type="number" placeholder="0.00">
+                    <span class="inp-unit">USDT</span>
+                </div>
+            </div>
+
+            <!-- Amount -->
+            <div class="form-group">
+                <div class="form-label">
+                    <span id="amount-label">Miktar (USDT)</span>
+                    <span class="avail" id="avail-label">Mevcut: —</span>
+                </div>
+                <div class="inp-wrap">
+                    <input class="form-inp" id="amount-inp" type="number" placeholder="0.00" oninput="updatePreview()">
+                    <span class="inp-unit" id="amount-unit">USDT</span>
+                </div>
+            </div>
+
+            <!-- Percent shortcuts -->
+            <div class="pct-row">
+                <button class="pct-btn" onclick="setPct(25)">25%</button>
+                <button class="pct-btn" onclick="setPct(50)">50%</button>
+                <button class="pct-btn" onclick="setPct(75)">75%</button>
+                <button class="pct-btn" onclick="setPct(100)">Max</button>
+            </div>
+
+            <!-- SL/TP toggle -->
+            <div class="sltp-toggle" onclick="toggleSLTP()">
+                <span>Stop Loss / Take Profit</span>
+                <div class="toggle-sw" id="sltp-sw"></div>
+            </div>
+            <div class="sltp-fields" id="sltp-fields" style="display:none;">
+                <div class="form-group">
+                    <div class="form-label">Stop Loss</div>
+                    <div class="inp-wrap">
+                        <input class="form-inp" id="sl-inp" type="number" placeholder="0.00">
+                        <span class="inp-unit">USDT</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">Take Profit</div>
+                    <div class="inp-wrap">
+                        <input class="form-inp" id="tp-inp" type="number" placeholder="0.00">
+                        <span class="inp-unit">USDT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="order-preview" id="order-preview">
+                <div class="preview-row"><span class="lbl">Tahmini Miktar</span><span class="val" id="prev-qty">—</span></div>
+                <div class="preview-row"><span class="lbl">Piyasa Fiyatı</span><span class="val" id="prev-price">—</span></div>
+                <div class="preview-row"><span class="lbl">Komisyon (~0.1%)</span><span class="val" id="prev-fee">—</span></div>
+            </div>
+
+            <!-- Execute -->
+            <button class="exec-btn buy" id="exec-btn" onclick="executeOrder()">Al BTC</button>
+        </div>
+    </div>
+
+    <!-- BOTTOM PANEL -->
+    <div class="bottom-panel">
+        <div class="bottom-tabs">
+            <button class="btab active" onclick="switchBtab('orders',this)">Açık Emirler <span id="order-count" style="background:rgba(243,186,47,.15);color:var(--gold);padding:1px 6px;border-radius:3px;font-size:10px;margin-left:4px;">0</span></button>
+            <button class="btab" onclick="switchBtab('history',this)">İşlem Geçmişi</button>
+            <button class="btab" onclick="switchBtab('portfolio',this)">Portföy</button>
+        </div>
+        <div class="bottom-content" id="bottom-content">
+            <!-- filled dynamically -->
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let socket        = null;
+let currentTab    = 'buy';
+let orderType     = 'MARKET';
+let sltpEnabled   = false;
+let autoEnabled   = true;
+let currentPrice  = 0;
+let portfolio     = { USDT: 0, BTC: 0 };
+let openOrders    = [];
+let tradeHistory  = [];
+let btabActive    = 'orders';
+let chart, candleSeries;
+let currentSymbol = 'BTCUSDT';
+let currentSymbolDisplay = 'BTC/USDT';
+let currentCoin = 'BTC';  // Sadece coin kısmı (BTC, ETH, vb.)
+
+// Popular trading pairs
+const SYMBOLS = [
+    { symbol: 'BTCUSDT', display: 'BTC/USDT', icon: '₿' },
+    { symbol: 'ETHUSDT', display: 'ETH/USDT', icon: 'Ξ' },
+    { symbol: 'BNBUSDT', display: 'BNB/USDT', icon: '🔶' },
+    { symbol: 'SOLUSDT', display: 'SOL/USDT', icon: '◎' },
+    { symbol: 'XRPUSDT', display: 'XRP/USDT', icon: '✕' },
+    { symbol: 'ADAUSDT', display: 'ADA/USDT', icon: '₳' },
+    { symbol: 'DOGEUSDT', display: 'DOGE/USDT', icon: 'Ð' },
+    { symbol: 'DOTUSDT', display: 'DOT/USDT', icon: '●' },
+    { symbol: 'MATICUSDT', display: 'MATIC/USDT', icon: '⬡' },
+    { symbol: 'LINKUSDT', display: 'LINK/USDT', icon: '🔗' },
+    { symbol: 'AVAXUSDT', display: 'AVAX/USDT', icon: '🔺' },
+    { symbol: 'LTCUSDT', display: 'LTC/USDT', icon: 'Ł' },
+    { symbol: 'UNIUSDT', display: 'UNI/USDT', icon: '🦄' },
+    { symbol: 'ATOMUSDT', display: 'ATOM/USDT', icon: '⚛' },
+    { symbol: 'ETCUSDT', display: 'ETC/USDT', icon: 'ξ' }
+];
+
+// ─── CHART ────────────────────────────────────────────────────────────────────
+let tvWidget = null;
+
+function initChart() {
+    try {
+        console.log('🚀 Initializing TradingView widget with symbol:', currentSymbol);
+        
+        tvWidget = new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:" + currentSymbol,
+            "interval": "15",
+            "timezone": "Europe/Istanbul",
+            "theme": "dark",
+            "style": "1",
+            "locale": "tr",
+            "toolbar_bg": "#0b0e11",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": true,
+            "save_image": false,
+            "container_id": "tradingview_spot_chart",
+            "backgroundColor": "#0b0e11",
+            "gridColor": "#1e2530",
+            "studies": [
+                "RSI@tv-basicstudies",
+                "Volume@tv-basicstudies"
+            ],
+            "disabled_features": [
+                "use_localstorage_for_settings",
+                "legend_widget"
+            ],
+            "enabled_features": [
+                "study_templates",
+                "study_dialog_search_control",
+                "side_toolbar_in_fullscreen_mode",
+                "header_in_fullscreen_mode",
+                "header_symbol_search"
+            ],
+            "overrides": {
+                "mainSeriesProperties.candleStyle.upColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.downColor": "#f6465d",
+                "mainSeriesProperties.candleStyle.borderUpColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.borderDownColor": "#f6465d",
+                "mainSeriesProperties.candleStyle.wickUpColor": "#0ecb81",
+                "mainSeriesProperties.candleStyle.wickDownColor": "#f6465d",
+                "paneProperties.background": "#0b0e11",
+                "paneProperties.backgroundType": "solid"
+            },
+            "studies_overrides": {
+                "volume.volume.color.0": "#f6465d",
+                "volume.volume.color.1": "#0ecb81"
+            },
+            "loading_screen": {
+                "backgroundColor": "#0b0e11",
+                "foregroundColor": "#f3ba2f"
+            }
+        });
+        
+        // Symbol değişikliğini dinle
+        tvWidget.onChartReady(() => {
+            console.log('✅ TradingView widget ready');
+            
+            // Mevcut symbol'ü al
+            const currentTVSymbol = tvWidget.activeChart().symbol();
+            console.log('📊 Current TradingView symbol:', currentTVSymbol);
+            
+            tvWidget.activeChart().onSymbolChanged().subscribe(null, function(symbolData) {
+                console.log('🔄 Symbol changed event triggered!');
+                console.log('📊 Symbol data from TradingView:', symbolData);
+                
+                // TradingView'den gelen symbol'ü işle
+                let newSymbol = symbolData.ticker || symbolData.name;
+                console.log('🔍 Raw symbol:', newSymbol);
+                
+                // BINANCE: prefix'ini kaldır
+                if (newSymbol.includes(':')) {
+                    newSymbol = newSymbol.split(':')[1];
+                    console.log('🔍 After removing prefix:', newSymbol);
+                }
+                
+                console.log('🎯 Final processed symbol:', newSymbol);
+                console.log('🎯 Current symbol in state:', currentSymbol);
+                
+                if (newSymbol !== currentSymbol) {
+                    console.log('✨ Symbol is different, updating...');
+                    currentSymbol = newSymbol;
+                    
+                    // Coin ismini çıkar (ETHUSDT -> ETH)
+                    currentCoin = newSymbol.replace('USDT', '');
+                    console.log('💰 Current coin:', currentCoin);
+                    
+                    // Display name'i güncelle
+                    const symbolInfo = SYMBOLS.find(s => s.symbol === newSymbol);
+                    currentSymbolDisplay = symbolInfo ? symbolInfo.display : newSymbol.replace('USDT', '/USDT');
+                    console.log('📝 Display name:', currentSymbolDisplay);
+                    
+                    // UI güncelle
+                    const symNameEl = document.getElementById('sym-name');
+                    if (symNameEl) {
+                        symNameEl.textContent = currentSymbolDisplay;
+                        console.log('✅ Updated sym-name element to:', currentSymbolDisplay);
+                    } else {
+                        console.error('❌ sym-name element not found!');
+                    }
+                    
+                    // Buton metinlerini güncelle
+                    updateButtonTexts();
+                    console.log('✅ Updated button texts');
+                    
+                    // Label'ları güncelle
+                    updateLabels();
+                    console.log('✅ Updated labels');
+                    
+                    // Orderbook güncelle
+                    fetchOrderbook();
+                    console.log('✅ Fetching orderbook for:', newSymbol);
+                    
+                    // Backend'e yeni symbol'ü bildir
+                    if (socket) {
+                        socket.emit('change_symbol', { symbol: newSymbol });
+                        console.log('✅ Sent change_symbol to backend:', newSymbol);
+                    } else {
+                        console.warn('⚠️ Socket not connected');
+                    }
+                    
+                    showToast('📊 ' + currentSymbolDisplay + ' yüklendi', 'success');
+                    console.log('✅ Page updated for:', currentSymbolDisplay);
+                } else {
+                    console.log('ℹ️ Symbol unchanged, skipping update');
+                }
+            });
+            
+            console.log('✅ Symbol change listener registered');
+        });
+    } catch(e) {
+        console.error('❌ TradingView widget yüklenemedi:', e);
+        showToast('Grafik yüklenemedi', 'error');
+    }
+}
+
+async function loadKlines(interval) {
+    // TradingView widget zaman dilimini değiştir
+    if (tvWidget && tvWidget.chart) {
+        const intervalMap = {
+            '1m': '1',
+            '5m': '5',
+            '15m': '15',
+            '1h': '60',
+            '4h': '240',
+            '1d': 'D'
+        };
+        tvWidget.chart().setResolution(intervalMap[interval] || '15');
+    }
+}
+
+let activeTf = '15m';
+function setTf(tf, btn) {
+    activeTf = tf;
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadKlines(tf);
+}
+
+// Update last candle from live price
+function updateLastCandle(price) {
+    // TradingView otomatik güncellenir
+}
+
+// ─── SOCKET ───────────────────────────────────────────────────────────────────
+function connectSocket() {
+    console.log('🔌 Connecting to socket.io...');
+    socket = io({ 
+        transports: ['polling', 'websocket'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+    });
+    
+    socket.on('connect', () => {
+        console.log('✅ Socket connected!');
+    });
+    
+    socket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error);
+    });
+    
+    socket.on('disconnect', (reason) => {
+        console.warn('⚠️ Socket disconnected:', reason);
+    });
+
+    socket.on('pro_data_stream', data => {
+        currentPrice = data.price;
+        updateHeader(data);
+        updateSMA(data.sma5, data.sma9, data.signal);
+        updateLastCandle(data.price);
+        
+        // Portfolio'yu güncelle
+        if (data.portfolio) {
+            portfolio = data.portfolio;
+        }
+        
+        updateAvail();
+        updatePreview();
+        updatePortfolioView();
+        if (data.auto_trade !== undefined) {
+            autoEnabled = data.auto_trade;
+            renderAutoBadge();
+        }
+        if (data.pnl !== undefined) updatePnL(data.pnl, data.pnl_pct || 0);
+        if (data.alert) showAlert(data.alert);
+        else hideAlert();
+        renderNavBal();
+    });
+
+    socket.on('trade_history_update', h => { tradeHistory = h; if (btabActive === 'history') renderHistory(); });
+    socket.on('open_orders_update',   o => { openOrders = o;   renderOpenOrders(); });
+    socket.on('order_status',  d => showToast(d.msg, 'success'));
+    socket.on('order_error',   d => showToast(d.msg, 'error'));
+    socket.on('log_update',    d => showToast(d.msg, 'info'));
+    socket.on('auto_status',   d => { autoEnabled = d.enabled; renderAutoBadge(); });
+    socket.on('portfolio_update', p => { portfolio = p; updateAvail(); updatePortfolioView(); renderNavBal(); });
+
+    socket.emit('request_history', {});
+
+    // orderbook polling
+    setInterval(fetchOrderbook, 2500);
+}
+
+// ─── ORDERBOOK ────────────────────────────────────────────────────────────────
+async function fetchOrderbook() {
+    try {
+        const r = await fetch(`https://testnet.binance.vision/api/v3/depth?symbol=${currentSymbol}&limit=12`);
+        const d = await r.json();
+        renderOB(d);
+    } catch(e) {
+        console.error('Orderbook fetch error:', e);
+    }
+}
+
+function renderOB(d) {
+    const asks   = (d.asks || []).slice(0, 10).reverse();
+    const bids   = (d.bids || []).slice(0, 10);
+    const maxAsk = Math.max(...asks.map(r => parseFloat(r[1])));
+    const maxBid = Math.max(...bids.map(r => parseFloat(r[1])));
+
+    document.getElementById('ob-asks').innerHTML = asks.map(([p, a]) => {
+        const pf = parseFloat(p), af = parseFloat(a);
+        const pct = (af / maxAsk * 100).toFixed(1);
+        return `<div class="ob-row ask" onclick="setLimitPrice(${pf})">
+            <span class="bar" style="width:${pct}%"></span>
+            <span class="price">${pf.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+            <span class="amt">${af.toFixed(4)}</span>
+            <span class="total">${(pf*af).toFixed(0)}</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('ob-bids').innerHTML = bids.map(([p, a]) => {
+        const pf = parseFloat(p), af = parseFloat(a);
+        const pct = (af / maxBid * 100).toFixed(1);
+        return `<div class="ob-row bid" onclick="setLimitPrice(${pf})">
+            <span class="bar" style="width:${pct}%"></span>
+            <span class="price">${pf.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+            <span class="amt">${af.toFixed(4)}</span>
+            <span class="total">${(pf*af).toFixed(0)}</span>
+        </div>`;
+    }).join('');
+
+    if (asks.length && bids.length) {
+        const bestAsk = parseFloat(asks[asks.length-1][0]);
+        const bestBid = parseFloat(bids[0][0]);
+        const spread  = (bestAsk - bestBid).toFixed(2);
+        document.getElementById('ob-spread').innerHTML = `$${currentPrice.toLocaleString('en-US',{maximumFractionDigits:2})} <span class="spread-sub">Spread: $${spread}</span>`;
+    }
+}
+
+function setLimitPrice(p) {
+    if (orderType !== 'LIMIT') { setOrderType('LIMIT', document.getElementById('ot-limit')); }
+    document.getElementById('limit-price').value = p.toFixed(2);
+    updatePreview();
+}
+
+// ─── HEADER ───────────────────────────────────────────────────────────────────
+function updateHeader(d) {
+    const el = document.getElementById('sym-price');
+    el.textContent = '$' + d.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    el.style.color = d.change24 >= 0 ? 'var(--green)' : 'var(--red)';
+
+    const chEl = document.getElementById('sym-change');
+    const sign = d.change24 >= 0 ? '+' : '';
+    chEl.textContent = sign + d.change24.toFixed(2) + '%';
+    chEl.style.color = d.change24 >= 0 ? 'var(--green)' : 'var(--red)';
+
+    document.getElementById('stat-high').textContent = '$' + parseFloat(d.high24).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('stat-low').textContent  = '$' + parseFloat(d.low24).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('stat-vol').textContent  = parseFloat(d.vol24).toFixed(1);
+}
+
+function renderNavBal() {
+    const coinBalance = portfolio[currentCoin] || 0;
+    const totalBalance = (portfolio.USDT || 0) + (coinBalance * currentPrice);
+    const balanceEl = document.getElementById('nav-total-balance');
+    if (balanceEl) {
+        balanceEl.textContent = totalBalance.toLocaleString('tr-TR', {maximumFractionDigits:2});
+    }
+}
+
+// ─── SMA ──────────────────────────────────────────────────────────────────────
+function updateSMA(sma5, sma9, signal) {
+    // Header'daki SMA değerleri
+    const sma5El = document.getElementById('stat-sma5');
+    const sma9El = document.getElementById('stat-sma9');
+    if (sma5El) sma5El.textContent = sma5 ? '$' + sma5.toLocaleString('en-US',{minimumFractionDigits:2}) : '—';
+    if (sma9El) sma9El.textContent = sma9 ? '$' + sma9.toLocaleString('en-US',{minimumFractionDigits:2}) : '—';
+    
+    // Sidebar'daki mini widget
+    const sma5SmEl = document.getElementById('sma5-val-sm');
+    const sma9SmEl = document.getElementById('sma9-val-sm');
+    const signalEl = document.getElementById('sma-signal-sm');
+    
+    if (sma5SmEl) sma5SmEl.textContent = sma5 ? '$' + sma5.toLocaleString('en-US',{minimumFractionDigits:0}) : '—';
+    if (sma9SmEl) sma9SmEl.textContent = sma9 ? '$' + sma9.toLocaleString('en-US',{minimumFractionDigits:0}) : '—';
+    
+    if (signalEl && signal) {
+        if (signal === 'BUY') {
+            signalEl.textContent = '⬆️ GOLDEN CROSS (SMA5 yukarı kesti SMA9)';
+            signalEl.style.color = 'var(--green)';
+        } else if (signal === 'SELL') {
+            signalEl.textContent = '⬇️ DEATH CROSS (SMA5 aşağı kesti SMA9)';
+            signalEl.style.color = 'var(--red)';
+        } else {
+            signalEl.textContent = 'Kesişim bekleniyor...';
+            signalEl.style.color = 'var(--muted)';
+        }
+    }
+}
+
+// ─── ALERT ────────────────────────────────────────────────────────────────────
+function showAlert(msg) {
+    const el = document.getElementById('alert-banner');
+    el.textContent = msg;
+    el.className = 'alert-banner ' + (msg.includes('ALIM') ? 'buy' : 'sell');
+    el.style.display = 'block';
+}
+function hideAlert() {
+    document.getElementById('alert-banner').style.display = 'none';
+}
+
+// ─── TRADE FORM ───────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tab-buy').classList.toggle('active', tab === 'buy');
+    document.getElementById('tab-sell').classList.toggle('active', tab === 'sell');
+    updateButtonTexts();
+    updateAvail();
+    updatePreview();
+}
+
+function updateButtonTexts() {
+    const btn = document.getElementById('exec-btn');
+    btn.className = 'exec-btn ' + currentTab;
+    btn.textContent = currentTab === 'buy' ? `Al ${currentCoin}` : `Sat ${currentCoin}`;
+}
+
+function updateLabels() {
+    // Orderbook başlığını güncelle
+    const obTitle = document.querySelector('.panel-head span:last-child');
+    if (obTitle) {
+        obTitle.textContent = currentSymbol;
+    }
+    
+    // Miktar label'larını güncelle
+    updateAvail();
+}
+
+function setOrderType(type, btn) {
+    orderType = type;
+    document.querySelectorAll('.otype-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('limit-price-group').style.display = type === 'LIMIT' ? 'flex' : 'none';
+    document.getElementById('limit-price-group').style.flexDirection = 'column';
+    updatePreview();
+}
+
+function toggleSLTP() {
+    sltpEnabled = !sltpEnabled;
+    document.getElementById('sltp-sw').classList.toggle('on', sltpEnabled);
+    document.getElementById('sltp-fields').style.display = sltpEnabled ? 'flex' : 'none';
+    document.getElementById('sltp-fields').style.flexDirection = 'column';
+}
+
+function updateAvail() {
+    const label = document.getElementById('avail-label');
+    if (currentTab === 'buy') {
+        label.textContent = `Mevcut: ${portfolio.USDT.toLocaleString('en-US',{maximumFractionDigits:2})} USDT`;
+        document.getElementById('amount-label').textContent = 'Miktar (USDT)';
+        document.getElementById('amount-unit').textContent = 'USDT';
+    } else {
+        const coinBalance = portfolio[currentCoin] || 0;
+        label.textContent = `Mevcut: ${coinBalance.toFixed(6)} ${currentCoin}`;
+        document.getElementById('amount-label').textContent = `Miktar (${currentCoin})`;
+        document.getElementById('amount-unit').textContent = currentCoin;
+    }
+}
+
+function setPct(pct) {
+    const coinBalance = portfolio[currentCoin] || 0;
+    const max = currentTab === 'buy' ? portfolio.USDT : coinBalance;
+    document.getElementById('amount-inp').value = (max * pct / 100).toFixed(currentTab === 'buy' ? 2 : 6);
+    updatePreview();
+}
+
+function updatePreview() {
+    const amt = parseFloat(document.getElementById('amount-inp').value) || 0;
+    const lp  = parseFloat(document.getElementById('limit-price').value) || 0;
+    const execPrice = (orderType === 'LIMIT' && lp > 0) ? lp : currentPrice;
+
+    let qty, value;
+    if (currentTab === 'buy') {
+        qty   = execPrice > 0 ? amt / execPrice : 0;
+        value = amt;
+    } else {
+        qty   = amt;
+        value = amt * execPrice;
+    }
+    const fee = value * 0.001;
+
+    document.getElementById('prev-qty').textContent   = qty.toFixed(6) + ' ' + currentCoin;
+    document.getElementById('prev-price').textContent = execPrice > 0 ? '$' + execPrice.toLocaleString('en-US',{minimumFractionDigits:2}) : '—';
+    document.getElementById('prev-fee').textContent   = fee > 0 ? '$' + fee.toFixed(4) : '—';
+}
+
+function setLeverage(val) {
+    if (socket) socket.emit('set_leverage', { leverage: parseInt(val) });
+    showToast(`⚡ Kaldıraç: ${val}x`, 'info');
+}
+
+function toggleAuto() {
+    autoEnabled = !autoEnabled;
+    if (socket) socket.emit('toggle_auto', { enabled: autoEnabled });
+    renderAutoBadge();
+}
+
+function renderAutoBadge() {
+    const badge = document.getElementById('auto-badge');
+    badge.className = 'auto-badge ' + (autoEnabled ? 'on' : 'off');
+    document.getElementById('auto-text').textContent = 'Oto: ' + (autoEnabled ? 'AKTİF' : 'KAPALI');
+    document.getElementById('auto-icon').textContent = autoEnabled ? '🤖' : '⛔';
+}
+
+function updatePnL(pnl, pnlPct) {
+    const el = document.getElementById('pnl-val');
+    if (el && pnl !== undefined) {
+        const pos = pnl >= 0;
+        el.style.color = pos ? 'var(--green)' : 'var(--red)';
+        el.textContent = (pos ? '+' : '') + pnl.toFixed(2) + ' (' + (pos ? '+' : '') + pnlPct.toFixed(2) + '%)';
+    }
+}
+
+function executeOrder() {
+    const amt = parseFloat(document.getElementById('amount-inp').value);
+    if (!amt || amt <= 0) { showToast('❌ Geçerli bir miktar girin', 'error'); return; }
+
+    if (!socket || !socket.connected) {
+        showToast('❌ Sunucu bağlantısı yok! Sayfayı yenileyin.', 'error');
+        console.error('Socket not connected!');
+        return;
+    }
+
+    const lp = parseFloat(document.getElementById('limit-price').value) || null;
+    const sl = parseFloat(document.getElementById('sl-inp').value)       || null;
+    const tp = parseFloat(document.getElementById('tp-inp').value)       || null;
+
+    const payload = { amount: amt, order_type: orderType, limit_price: lp, sl_price: sl, tp_price: tp };
+
+    console.log('📤 Sending order:', currentTab, payload);
+
+    if (currentTab === 'buy') {
+        socket.emit('execute_buy', payload);
+        showToast(`⏳ Alım emri gönderildi…`, 'info');
+    } else {
+        socket.emit('execute_sell', { ...payload, amount: amt });
+        showToast(`⏳ Satım emri gönderildi…`, 'info');
+    }
+    document.getElementById('amount-inp').value = '';
+    updatePreview();
+}
+
+// ─── BOTTOM PANELS ────────────────────────────────────────────────────────────
+function switchBtab(tab, btn) {
+    btabActive = tab;
+    document.querySelectorAll('.btab').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    if (tab === 'orders')    renderOpenOrders();
+    if (tab === 'history')   renderHistory();
+    if (tab === 'portfolio') renderPortfolio();
+}
+
+function renderOpenOrders() {
+    document.getElementById('order-count').textContent = openOrders.length;
+    if (btabActive !== 'orders') return;
+    const el = document.getElementById('bottom-content');
+    if (!openOrders.length) {
+        el.innerHTML = '<div class="empty-state">Açık emir yok</div>'; return;
+    }
+    el.innerHTML = `<table class="data-table">
+        <thead><tr>
+            <th>Zaman</th><th>Tür</th><th>Yön</th><th>Miktar</th><th>Tetikleyici</th><th>İptal</th>
+        </tr></thead>
+        <tbody>${openOrders.map(o => `<tr>
+            <td class="mono" style="color:var(--muted)">${o.time}</td>
+            <td>${o.type}</td>
+            <td class="${o.side==='BUY'?'buy-txt':'sell-txt'}">${o.side}</td>
+            <td class="mono">${parseFloat(o.qty).toFixed(4)} BTC</td>
+            <td class="mono">$${parseFloat(o.trigger).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+            <td><button class="cancel-btn" onclick="cancelOrder('${o.id}')">İptal</button></td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function renderHistory() {
+    const el = document.getElementById('bottom-content');
+    if (!tradeHistory.length) {
+        el.innerHTML = '<div class="empty-state">Henüz işlem yapılmadı</div>'; return;
+    }
+    el.innerHTML = `<table class="data-table">
+        <thead><tr>
+            <th>Zaman</th><th>Yön</th><th>Tür</th><th>Miktar</th><th>Fiyat</th><th>Değer</th>
+        </tr></thead>
+        <tbody>${tradeHistory.map(t => `<tr>
+            <td class="mono" style="color:var(--muted)">${t.time}</td>
+            <td class="${t.side==='BUY'?'buy-txt':'sell-txt'}">${t.side==='BUY'?'▲':'▼'} ${t.side}</td>
+            <td style="color:var(--muted)">${t.type}</td>
+            <td class="mono">${parseFloat(t.qty).toFixed(4)} BTC</td>
+            <td class="mono">$${parseFloat(t.price).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+            <td class="mono" style="color:var(--gold)">$${parseFloat(t.value).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+let portfolioCache = {};
+function updatePortfolioView() { portfolioCache = { ...portfolio }; if (btabActive === 'portfolio') renderPortfolio(); }
+
+function renderPortfolio() {
+    const el = document.getElementById('bottom-content');
+    const coinBalance = portfolioCache[currentCoin] || 0;
+    const coinVal  = coinBalance * currentPrice;
+    const total   = (portfolioCache.USDT || 0) + coinVal;
+    const usdtPct = total > 0 ? ((portfolioCache.USDT / total) * 100).toFixed(1) : 0;
+    const coinPct  = total > 0 ? ((coinVal / total) * 100).toFixed(1) : 0;
+
+    el.innerHTML = `<table class="data-table">
+        <thead><tr><th>Varlık</th><th>Miktar</th><th>Fiyat</th><th>Değer (USD)</th><th>Oran</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong style="color:#fff">USDT</strong></td>
+                <td class="mono">${(portfolioCache.USDT||0).toFixed(2)}</td>
+                <td class="mono">$1.00</td>
+                <td class="mono" style="color:var(--gold)">$${(portfolioCache.USDT||0).toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:80px;height:4px;background:var(--border);border-radius:2px;"><div style="width:${usdtPct}%;height:100%;background:var(--blue);border-radius:2px;"></div></div><span class="mono" style="font-size:11px;color:var(--muted);">${usdtPct}%</span></div></td>
+            </tr>
+            <tr>
+                <td><strong style="color:#fff">BTC</strong></td>
+                <td class="mono">${(portfolioCache.BTC||0).toFixed(6)}</td>
+                <td class="mono">$${currentPrice.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+                <td class="mono" style="color:var(--gold)">$${btcVal.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:80px;height:4px;background:var(--border);border-radius:2px;"><div style="width:${btcPct}%;height:100%;background:var(--gold);border-radius:2px;"></div></div><span class="mono" style="font-size:11px;color:var(--muted);">${btcPct}%</span></div></td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr style="border-top:1px solid var(--border);">
+                <td colspan="3" style="color:var(--muted);font-size:11px;padding:10px 14px;">Toplam Portföy Değeri</td>
+                <td class="mono" style="color:#fff;font-weight:700;font-size:14px;padding:10px 14px;">$${total.toLocaleString('en-US',{minimumFractionDigits:2})}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>`;
+}
+
+function cancelOrder(id) {
+    if (socket) socket.emit('cancel_order', { id });
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    const d = document.createElement('div');
+    d.className = `toast-item ${type}`;
+    d.textContent = msg;
+    t.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    // TradingView widget yüklenmesini bekle
+    setTimeout(() => {
+        initChart();
+    }, 500);
+    connectSocket();
+    renderOpenOrders();
+    updateAvail();
+
+    // URL param: ?symbol=ETHUSDT
+    const sp = new URLSearchParams(location.search);
+    const sym = sp.get('symbol');
+    if (sym) document.getElementById('sym-name').textContent = sym.replace('USDT', '/USDT');
+});
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+    document.getElementById('mobile-menu').classList.toggle('active');
+}
+// Account menu toggle
+function toggleAccountMenu() {
+    const menu = document.getElementById('account-menu');
+    const btn = document.getElementById('account-btn');
+    menu?.classList.toggle('active');
+    btn?.classList.toggle('active');
+}
+
+document.addEventListener('click', function(event) {
+    const accountDropdown = document.querySelector('.account-dropdown');
+    if (accountDropdown && !accountDropdown.contains(event.target)) {
+        document.getElementById('account-menu')?.classList.remove('active');
+        document.getElementById('account-btn')?.classList.remove('active');
+    }
+});
+
+async function loadTotalBalance() {
+    try {
+        const r = await fetch('/api/balance');
+        const d = await r.json();
+        if (!d.error) {
+            const priceRes = await fetch('/api/market');
+            const marketData = await priceRes.json();
+            const btcPrice = marketData.find(c => c.symbol?.toLowerCase() === 'btc')?.current_price || 0;
+            const totalBalance = parseFloat(d.USDT || 0) + (parseFloat(d.BTC || 0) * btcPrice);
+            const balanceEl = document.getElementById('nav-total-balance');
+            if (balanceEl) {
+                balanceEl.textContent = totalBalance.toLocaleString('tr-TR', {maximumFractionDigits:2});
+            }
+        }
+    } catch(e) {}
+}
+
+loadTotalBalance();
+setInterval(loadTotalBalance, 30000);
+
+</script>
+
+</body>
+</html>

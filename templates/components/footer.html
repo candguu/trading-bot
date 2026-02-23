@@ -1,0 +1,186 @@
+<!-- Footer Component -->
+<footer class="layout-footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-info">
+                <div class="footer-brand">
+                    <div class="logo-icon-small">⚡</div>
+                    <span class="footer-brand-text">TradingBot<span class="text-gold">Pro</span></span>
+                </div>
+                <p class="footer-description">
+                    Kripto ticaret otomasyon sistemi - 7/24 otomatik alım-satım
+                </p>
+            </div>
+            
+            <div class="footer-meta">
+                <div class="footer-version">
+                    <span class="footer-label">Versiyon:</span>
+                    <span class="footer-value" id="app-version">1.0.0</span>
+                </div>
+                <div class="footer-mode">
+                    <span class="footer-label">Mod:</span>
+                    <span class="footer-value" id="app-mode">Testnet</span>
+                </div>
+            </div>
+            
+            <div class="footer-copyright">
+                <p>&copy; <span id="current-year">2024</span> TradingBot Pro. Tüm hakları saklıdır.</p>
+                <p class="footer-disclaimer">
+                    Risk Uyarısı: Kripto para ticareti yüksek risk içerir. Yatırım kararlarınızı dikkatli alın.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<style>
+/* Footer Styles */
+.layout-footer {
+    background: var(--panel, #12161c);
+    border-top: 1px solid var(--border, #1e2530);
+    padding: var(--spacing-xl, 2rem) 0;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg, 1.5rem);
+    padding: var(--spacing-md, 1rem) 0;
+}
+
+@media (min-width: 768px) {
+    .footer-content {
+        grid-template-columns: 2fr 1fr 2fr;
+        gap: var(--spacing-xl, 2rem);
+        align-items: start;
+    }
+}
+
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    margin-bottom: var(--spacing-xs, 0.25rem);
+}
+
+.logo-icon-small {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--gold, #f3ba2f), #c87700);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 10px rgba(243,186,47,.2);
+}
+
+.footer-brand-text {
+    font-weight: 700;
+    font-size: var(--font-size-base, 1rem);
+    color: var(--text, #c9d1e0);
+}
+
+.text-gold {
+    color: var(--gold, #f3ba2f);
+}
+
+.footer-description {
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--muted, #5a6478);
+    line-height: 1.6;
+    max-width: 400px;
+}
+
+.footer-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 0.5rem);
+}
+
+.footer-version,
+.footer-mode {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs, 0.25rem);
+    font-size: var(--font-size-sm, 0.875rem);
+}
+
+.footer-label {
+    color: var(--muted, #5a6478);
+    font-weight: 600;
+}
+
+.footer-value {
+    color: var(--text, #c9d1e0);
+    font-family: var(--mono, 'DM Mono', monospace);
+    font-weight: 500;
+}
+
+#app-mode {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(59,130,246,.12);
+    color: var(--blue, #3b82f6);
+    font-size: var(--font-size-xs, 0.75rem);
+}
+
+.footer-copyright {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 0.25rem);
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--muted, #5a6478);
+}
+
+.footer-copyright p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.footer-disclaimer {
+    font-size: var(--font-size-xs, 0.75rem);
+    font-style: italic;
+    opacity: 0.8;
+}
+
+@media (max-width: 767px) {
+    .footer-content {
+        text-align: center;
+    }
+    
+    .footer-brand {
+        justify-content: center;
+    }
+    
+    .footer-description {
+        margin: 0 auto;
+    }
+    
+    .footer-meta {
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+// Set current year dynamically
+document.getElementById('current-year').textContent = new Date().getFullYear();
+
+// Set app mode from environment or config
+// This can be updated dynamically based on actual mode
+const isTestnet = window.location.hostname.includes('testnet') || 
+                  localStorage.getItem('trading_mode') === 'testnet';
+document.getElementById('app-mode').textContent = isTestnet ? 'Testnet' : 'Live Trading';
+document.getElementById('app-mode').style.background = isTestnet ? 
+    'rgba(59,130,246,.12)' : 'rgba(14,203,129,.12)';
+document.getElementById('app-mode').style.color = isTestnet ? 
+    'var(--blue)' : 'var(--green)';
+</script>

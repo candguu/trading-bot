@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr" style="background-color: #0b0e11;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Giriş - TradingBot Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0e11;
+            --panel: #161a1e;
+            --panel2: #1e2329;
+            --border: #2b3139;
+            --gold: #f3ba2f;
+            --green: #0ecb81;
+            --red: #f6465d;
+            --text: #eaecef;
+            --muted: #848e9c;
+            --font: 'DM Sans', sans-serif;
+            --mono: 'DM Mono', monospace;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+        }
+        .logo-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--gold), #c87700);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 0 20px rgba(243,186,47,.3);
+        }
+        .logo-text {
+            font-weight: 700;
+            font-size: 28px;
+            color: var(--text);
+            letter-spacing: -.5px;
+        }
+        .logo-text span {
+            color: var(--gold);
+        }
+
+        .login-container {
+            background: var(--panel);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--panel2);
+            color: var(--text);
+            font-family: var(--font);
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--gold), #c87700);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(243,186,47,.3);
+        }
+        .error {
+            background: rgba(246,70,93,.15);
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid rgba(246,70,93,.3);
+            font-size: 14px;
+        }
+        .remember {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .remember input {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .remember label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body style="background-color: #0b0e11; color: #eaecef;">
+
+    
+    <div class="logo-header">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">Trading<span>Bot</span></div>
+    </div>
+    
+    <div class="login-container">
+        <h1>Giriş Yap</h1>
+        
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="remember">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Beni Hatırla</label>
+            </div>
+            
+            <button type="submit">Giriş Yap</button>
+        </form>
+    </div>
+</body>
+</html>
